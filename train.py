@@ -1,0 +1,124 @@
+from __future__ import print_function
+import tensorflow as tf
+from model import Model
+from data_loader import dataLoader
+
+class Train(object):
+    def __init__(self, model, data, val_data, **kwargs):
+        self.model         = model
+        self.data          = data
+        self.val_data      = val_data
+        self.n_epochs      = kwargs.pop('n_epochs', 20)
+        self.batch_size    = kwargs.pop('batch_size', 64)
+        self.update_rule   = kwargs.pop('update_rule', 'adam')
+        self.learning_rate = kwargs.pop('learning_rate', 0.001)
+        self.print_every   = kwargs.pop('print_every', 100)
+        self.save_every    = kwargs.pop('save_every', 1)
+        self.log_path      = kwargs.pop('log_path', './log/')
+        self.model_path    = kwargs.pop('model_path', './model/')
+        self.pretrained_model = kwargs.pop('pretrained_model', None)
+
+        # set an optimizer by update rule
+        if self.update_rule == 'adam':
+            self.optimizer = tf.train.AdamOptimizer
+        elif self.update_rule == 'momentum':
+            self.optimizer = tf.train.MomentumOptimizer
+        elif self.update_rule == 'rmsprop':
+            self.optimizer = tf.train.RMSPropOptimizer
+
+        if not os.path.exists(self.model_path):
+            os.makedirs(self.model_path)
+        if not os.path.exists(self.log_path):
+            os.makedirs(self.log_path)
+
+    def train(self):
+        # Train dataset
+        n_examples = self.data.max_length
+        n_iters_per_epoch = int(np.ceil(float(n_examples)/self.batch_size))
+
+        # Build model with loss
+        loss = self.model.build_model()
+
+        # Train op
+        with tf.name_scope('optimizer'):
+            optimizer = self.optimizer(learning_rate=self.learning_rate)
+            grads = tf.gradients(loss, tf.trainable_variables())
+            grads_and_vars = list(zip(grads, tf.trainable_variables()))
+            train_op = optimizer.apply_gradients(grads_and_vars=grads_and_vars)
+
+        # Summary op
+        tf.scalar_summary('batch_loss', loss)
+        for var in tf.trainable_variables():
+            tf.histogram_summary(var.op.name, var)
+        for grad, var in grads_and_vars:
+            tf.histogram_summary(var.op.name+'/gradient', grad)
+
+        summary_op = tf.merge_all_summaries()
+
+        print("The number of epoch: %d" %self.n_epochs)
+        print("Data size: %d" %n_examples)
+        print("Batch size: %d" %self.batch_size)
+        print("Iterations per epoch: %d" %n_iters_per_epoch)
+
+        config = tf.ConfigProto(allow_soft_placement = True)
+        config.gpu_options.allow_growth = True
+        with tf.Session(config=config) as sess:
+            # Intialize the training graph
+            sess.run(tf.global_variables_initializer)
+            # Tensorboard summary path
+            summary_writer = tf.train.SummaryWriter(self.log_path, graph=tf.get_default_graph())
+            saver = tf.train.Saver(max_to_keep=40)
+
+            if self.pretrained_model is not None:
+                print "Start training with pretrained Model.."
+                saver.restore(sess, self.pretrained_model)
+
+            prev_loss = -1
+            for e in range(self.n_epochs):
+                curr_loss = 0
+                start_t   = time.time()
+                for i in range(n_iters_per_epoch):
+                    image_batch, grd_bboxes_batch, grd_attn_batch = next(self.data.gen_data_batch(self.batch_size))
+                    feed_dict = {self.model.images: image_batch,
+                                 self.model.bboxes: grd_bboxes_batch,
+                                 self.model.gnd_attn: grd_attn_batch,
+                                 self.model.drop_prob: 0.5}
+
+                    _, l = sess.run([train_op, loss], feed_dict)
+                    curr_loss += l
+
+                    if i%self.print_every == 0:
+                        print('Epoch Completion..{%d/%d}' % (i, n_iters_per_epoch))
+
+                    # write summary for tensorboard visualization
+                    if i % 10 == 0:
+                        summary = sess.run(summary_op, feed_dict)
+                        summary_writer.add_summary(summary, e*n_iters_per_epoch + i)
+
+                print("Previous epoch loss: ", prev_loss)
+                print("Current epoch loss: ", curr_loss)
+                print("Elapsed time: ", time.time() - start_t)
+                prev_loss = curr_loss
+
+                # Save model's parameters
+                if (e+1) % self.save_every == 0:
+                    saver.save(sess, os.path.join(self.model_path, 'model'), global_step=e+1)
+                    print "model-%s saved." %(e+1)
+        # Close session
+        sess.close()
+#-------------------------------------------------------------------------------
+def main():
+    # Load train dataset
+    data = dataLoader(directory='./dataset', dataset_name='', max_steps=3, mode='Train')
+    # Load Model
+    model = CaptionGenerator(dim_feature=[49, 256], dim_hidden=128, n_time_step=3,
+                             alpha_c=0.0, image_height=64, image_width=64, mode='tain')
+    # Load Trainer
+    trainer = Train(model, data, val_data=None, n_epochs=20, batch_size=64, update_rule='adam',
+                    learning_rate=0.001, print_every=1000, save_every=1, image_path='./image/',
+                    pretrained_model=None, model_path='model/lstm/', log_path='log/')
+    # Begin Training
+    trainer.train()
+
+if __name__ == "__main__":
+    main()
