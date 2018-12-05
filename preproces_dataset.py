@@ -108,7 +108,7 @@ def generate_ground_attention_mask(sample, sample_top, sample_height, sample_lef
 
     sample_attention_res = cv2.resize(sample_attention, ground_attention_downsample, interpolation=cv2.INTER_NEAREST)
 
-    sample_attention_res = np.expand_dims(sample_attention_res, axis=3)
+    sample_attention_res = np.expand_dims(sample_attention_res, axis=-1)
 
     return sample_attention, sample_attention_res
 
