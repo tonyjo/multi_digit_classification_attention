@@ -1,11 +1,15 @@
 from __future__ import print_function
 import os
 import cv2
+import random
+import numpy as np
 
 class dataLoader(object):
-    def __init__(self, directory, dataset_name, max_steps, mode='Train'):
+    def __init__(self, directory, dataset_dir, dataset_name, max_steps, mode='Train'):
+        self.mode         = mode
         self.max_steps    = max_steps
         self.directory    = directory
+        self.dataset_dir  = dataset_dir
         self.dataset_name = dataset_name
         self.load_data()
 
@@ -84,14 +88,14 @@ class dataLoader(object):
             # Generate training batch
             for _ in range(batch_size):
                 sample_data = next(data_gen)
-                sample_img_path = os.path.join(self.directory, self.dataset_name, sample_data[0][0])
+                sample_img_path = os.path.join(self.directory, self.dataset_dir, sample_data[0][0])
                 image = cv2.imread(sample_img_path)
                 # Gather sample data for all time steps
                 all_sample_data = []
                 all_sample_attn = []
                 for idx in range(self.max_steps):
                     # Get ground attention mask
-                    sample_attn_mask_path = os.path.join(self.directory, self.dataset_name, sample_data[0][:-4] + '_' + str(idx) + '.npy')
+                    sample_attn_mask_path = os.path.join(self.directory, self.dataset_dir, sample_data[0][0][:-4] + '_' + str(idx) + '.npy')
                     sample_attn_mask = np.load(sample_attn_mask_path)
 
                     # Extract ground boxes-- sample_left, sample_top, sample_width, sample_height
