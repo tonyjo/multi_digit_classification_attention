@@ -1,0 +1,7 @@
+*.pyc
+dataset/train
+dataset/train_curated
+dataset/test
+dataset/test_curated
+
+
