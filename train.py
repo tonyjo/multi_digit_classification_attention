@@ -1,4 +1,10 @@
 from __future__ import print_function
+import os
+import os
+os.environ["CUDA_DEVICE_ORDER"]="PCI_BUS_ID"
+os.environ["CUDA_VISIBLE_DEVICES"]="0, 1"
+import time
+import numpy as np
 import tensorflow as tf
 from model import Model
 from data_loader import dataLoader
@@ -11,7 +17,7 @@ class Train(object):
         self.n_epochs      = kwargs.pop('n_epochs', 20)
         self.batch_size    = kwargs.pop('batch_size', 64)
         self.update_rule   = kwargs.pop('update_rule', 'adam')
-        self.learning_rate = kwargs.pop('learning_rate', 0.001)
+        self.learning_rate = kwargs.pop('learning_rate', 0.0001)
         self.print_every   = kwargs.pop('print_every', 100)
         self.save_every    = kwargs.pop('save_every', 1)
         self.log_path      = kwargs.pop('log_path', './log/')
@@ -47,30 +53,27 @@ class Train(object):
             train_op = optimizer.apply_gradients(grads_and_vars=grads_and_vars)
 
         # Summary op
-        tf.scalar_summary('batch_loss', loss)
-        for var in tf.trainable_variables():
-            tf.histogram_summary(var.op.name, var)
-        for grad, var in grads_and_vars:
-            tf.histogram_summary(var.op.name+'/gradient', grad)
+        tf.summary.scalar('batch_loss', loss)
 
-        summary_op = tf.merge_all_summaries()
+        summary_op = tf.summary.merge_all()
 
         print("The number of epoch: %d" %self.n_epochs)
         print("Data size: %d" %n_examples)
         print("Batch size: %d" %self.batch_size)
         print("Iterations per epoch: %d" %n_iters_per_epoch)
 
-        config = tf.ConfigProto(allow_soft_placement = True)
-        config.gpu_options.allow_growth = True
-        with tf.Session(config=config) as sess:
+        # Set GPU options
+        config = tf.GPUOptions(allow_growth=True)
+
+        with tf.Session(config=tf.ConfigProto(gpu_options=config)) as sess:
             # Intialize the training graph
-            sess.run(tf.global_variables_initializer)
+            sess.run(tf.global_variables_initializer())
             # Tensorboard summary path
-            summary_writer = tf.train.SummaryWriter(self.log_path, graph=tf.get_default_graph())
+            summary_writer = tf.summary.FileWriter(self.log_path, graph=sess.graph)
             saver = tf.train.Saver(max_to_keep=40)
 
             if self.pretrained_model is not None:
-                print "Start training with pretrained Model.."
+                print("Start training with pretrained Model..")
                 saver.restore(sess, self.pretrained_model)
 
             prev_loss = -1
@@ -103,20 +106,20 @@ class Train(object):
                 # Save model's parameters
                 if (e+1) % self.save_every == 0:
                     saver.save(sess, os.path.join(self.model_path, 'model'), global_step=e+1)
-                    print "model-%s saved." %(e+1)
+                    print("model-%s saved." %(e+1))
         # Close session
         sess.close()
 #-------------------------------------------------------------------------------
 def main():
     # Load train dataset
-    data = dataLoader(directory='./dataset', dataset_name='', max_steps=3, mode='Train')
+    data = dataLoader(directory='./dataset', dataset_dir='train_curated', dataset_name='train.txt', max_steps=3, mode='Train')
     # Load Model
-    model = CaptionGenerator(dim_feature=[49, 256], dim_hidden=128, n_time_step=3,
-                             alpha_c=0.0, image_height=64, image_width=64, mode='tain')
+    model = Model(dim_feature=[49, 256], dim_hidden=128, n_time_step=3,
+                  alpha_c=0.5, image_height=64, image_width=64, mode='train')
     # Load Trainer
-    trainer = Train(model, data, val_data=None, n_epochs=20, batch_size=64, update_rule='adam',
-                    learning_rate=0.001, print_every=1000, save_every=1, image_path='./image/',
-                    pretrained_model=None, model_path='model/lstm/', log_path='log/')
+    trainer = Train(model, data, val_data=None, n_epochs=30, batch_size=64, update_rule='adam',
+                    learning_rate=0.00001, print_every=100, save_every=1, image_path='./image/',
+                    pretrained_model='model/lstm1/model-20', model_path='model/lstm1/', log_path='log1/')
     # Begin Training
     trainer.train()
 

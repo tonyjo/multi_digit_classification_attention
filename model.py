@@ -5,7 +5,7 @@ from nets import net
 
 class Model(object):
     def __init__(self, dim_feature=[49, 256], dim_hidden=128, n_time_step=3,
-                 alpha_c=0.0, image_height=64, image_width=64, mode='tain'):
+                 alpha_c=0.0, image_height=64, image_width=64, mode='train'):
         self.L = dim_feature[0]
         self.D = dim_feature[1]
         self.H = dim_hidden
