@@ -5,5 +5,6 @@ dataset/test
 dataset/test_curated
 test_model.py
 test_nets.py
-
+.ipynb_checkpoints/
+ignored.txt
 
