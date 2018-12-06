@@ -5,8 +5,8 @@ os.environ["CUDA_VISIBLE_DEVICES"]="0"
 import time
 import numpy as np
 import tensorflow as tf
-from model import Model
-from data_loader import dataLoader
+from src.model import Model
+from src.data_loader import dataLoader
 
 class Test(object):
     def __init__(self, model, data, val_data, **kwargs):
