@@ -1,15 +1,14 @@
 from __future__ import print_function
 import os
-import os
 os.environ["CUDA_DEVICE_ORDER"]="PCI_BUS_ID"
-os.environ["CUDA_VISIBLE_DEVICES"]="0, 1"
+os.environ["CUDA_VISIBLE_DEVICES"]="0"
 import time
 import numpy as np
 import tensorflow as tf
 from model import Model
 from data_loader import dataLoader
 
-class Train(object):
+class Test(object):
     def __init__(self, model, data, val_data, **kwargs):
         self.model         = model
         self.data          = data
@@ -38,8 +37,8 @@ class Train(object):
         wi = w11/2.0 + tf.transpose(w21/2.0)
         hi = h11/2.0 + tf.transpose(h21/2.0)
 
-        inter_area = tf.maximum(wi - (xi1 - xi2 + 1), 0) \
-                     * tf.maximum(hi - (yi1 - yi2 + 1), 0)
+        inter_area = tf.maximum(wi - (xi1 - xi2 + 1), 0) *\
+                     tf.maximum(hi - (yi1 - yi2 + 1), 0)
 
         bboxes1_area = w11 * h11
         bboxes2_area = w21 * h21
@@ -51,7 +50,7 @@ class Train(object):
     def test(self):
         # Train dataset
         n_examples = self.data.max_length
-        n_iters_per_epoch = int(np.ceil(float(n_examples)/self.batch_size))
+        n_iters    = int(np.ceil(float(n_examples)/self.batch_size))
 
         # Build model with loss
         pred_bboxs_, alpha_list_ = self.model.build_test_model()
@@ -59,7 +58,7 @@ class Train(object):
         # Summary
         print("Data size:  %d" %n_examples)
         print("Batch size: %d" %self.batch_size)
-        print("Iterations: %d" %n_iters_per_epoch)
+        print("Iterations: %d" %n_iters)
 
         # Set GPU options
         config = tf.GPUOptions(allow_growth=True)
@@ -68,14 +67,15 @@ class Train(object):
             # Intialize the training graph
             sess.run(tf.global_variables_initializer())
             # Tensorboard summary path
-            summary_writer = tf.summary.FileWriter(self.log_path, graph=sess.graph)
-            saver = tf.train.Saver(max_to_keep=40)
+            saver = tf.train.Saver()
 
             if self.pretrained_model is not None:
-                print("Start training with pretrained Model..")
+                print("Start testing with pretrained Model..")
                 saver.restore(sess, self.pretrained_model)
+            else:
+                print("Start testing with Model with random weights...")
 
-            for i in range(n_iters_per_epoch):
+            for i in range(n_iters):
                 image_batch, grd_bboxes_batch, _= next(self.data.gen_data_batch(self.batch_size))
                 feed_dict = {self.model.images: image_batch,
                              self.model.drop_prob: 1.0}
@@ -83,19 +83,9 @@ class Train(object):
                 _, prediction_bboxes = sess.run(pred_bboxs_, feed_dict)
 
                 if i%self.print_every == 0:
-                    print('Epoch Completion..{%d/%d}' % (i, n_iters_per_epoch))
-
-                # write summary for tensorboard visualization
-                if i % 10 == 0:
-                    summary = sess.run(summary_op, feed_dict)
-                    summary_writer.add_summary(summary, e*n_iters_per_epoch + i)
-
-                prev_loss = curr_loss
-
-                # Save model's parameters
-                if (e+1) % self.save_every == 0:
-                    saver.save(sess, os.path.join(self.model_path, 'model'), global_step=e+1)
-                    print("model-%s saved." %(e+1))
+                    print('Epoch Completion..{%d/%d}' % (i, n_iters))
+        print('Epoch Completion..{%d/%d}' % (n_iters, n_iters))
+        print('Completed!')
         # Close session
         sess.close()
 #-------------------------------------------------------------------------------
@@ -106,11 +96,9 @@ def main():
     model = Model(dim_feature=[49, 256], dim_hidden=128, n_time_step=3,
                   alpha_c=0.0, image_height=64, image_width=64, mode='test')
     # Load Trainer
-    trainer = Train(model, data, val_data=None, n_epochs=20, batch_size=64, update_rule='adam',
-                    learning_rate=0.0001, print_every=1000, save_every=1, image_path='./image/',
-                    pretrained_model=None, model_path='model/lstm/', log_path='log/')
+    testing = Test(model, data, batch_size=64, print_every=100, pretrained_model=None)
     # Begin Training
-    trainer.train()
+    testing.test()
 
 if __name__ == "__main__":
     main()

@@ -66,7 +66,7 @@ class dataLoader(object):
 
     def gen_val_data(self):
         while True:
-            indices = range(len(self.images))
+            indices = range(len(self.all_data))
             for i in indices:
                 data  = self.all_data[i]
 

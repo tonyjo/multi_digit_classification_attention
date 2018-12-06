@@ -1,8 +1,7 @@
 from __future__ import print_function
 import os
-import os
 os.environ["CUDA_DEVICE_ORDER"]="PCI_BUS_ID"
-os.environ["CUDA_VISIBLE_DEVICES"]="0, 1"
+os.environ["CUDA_VISIBLE_DEVICES"]="0"
 import time
 import numpy as np
 import tensorflow as tf
@@ -117,8 +116,8 @@ def main():
     model = Model(dim_feature=[49, 256], dim_hidden=128, n_time_step=3,
                   alpha_c=0.5, image_height=64, image_width=64, mode='train')
     # Load Trainer
-    trainer = Train(model, data, val_data=None, n_epochs=30, batch_size=64, update_rule='adam',
-                    learning_rate=0.00001, print_every=100, save_every=1, image_path='./image/',
+    trainer = Train(model, data, val_data=None, n_epochs=30, batch_size=64,
+                    update_rule='adam', learning_rate=0.00001, print_every=100, save_every=1,
                     pretrained_model='model/lstm1/model-20', model_path='model/lstm1/', log_path='log1/')
     # Begin Training
     trainer.train()

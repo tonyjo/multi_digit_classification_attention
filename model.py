@@ -101,6 +101,15 @@ class Model(object):
                 grnd_alpha = self.gnd_attn[:, T, :, :, :] # (N, 7, 7, 1)
                 eror_alpha = tf.nn.softmax_cross_entropy_with_logits(labels=grnd_alpha, logits=pred_alpha) # (N,)
                 alpha_loss += tf.reduce_sum(eror_alpha) # (1)
+
+            ## KL-loss
+            alpha_loss = 0.0
+            for T in range(self.T):
+                pred_alpha = alpha_list[T] # (N, L)
+                grnd_alpha = self.gnd_attn[:, T, :, :, :] # (N, L)
+                eror_alpha = tf.distributions.kl_divergence(grnd_alpha, grnd_alpha) # (N,)
+                alpha_loss += tf.reduce_sum(eror_alpha) # (1)
+
             # Weight alpha loss
             alpha_reg = self.alpha_c * alpha_loss
             # Add alpha loss to
