@@ -18,8 +18,9 @@ class Model(object):
         self.const_initializer  = tf.constant_initializer(0.0)
         # Placeholder
         self.images    = tf.placeholder(tf.float32, [None, image_height, image_width, 3])
-        self.bboxes    = tf.placeholder(tf.int32,   [None, self.T, 4])
-        self.gnd_attn  = tf.placeholder(tf.int32,   [None, self.T, self.H_attn, self.W_attn, 1])
+        self.bboxes    = tf.placeholder(tf.float32,   [None, self.T, 4])
+        #self.gnd_attn  = tf.placeholder(tf.float32,   [None, self.T, self.H_attn, self.W_attn, 1])
+        self.gnd_attn  = tf.placeholder(tf.float32,   [None, self.T, self.L])
         self.drop_prob = tf.placeholder(tf.float32, name='dropout_prob')
 
     def _mean_squared_error(self, grd_bboxes, pred_bboxes):
@@ -52,7 +53,7 @@ class Model(object):
             alpha   = tf.nn.softmax(out_att)
             context = tf.reduce_sum(features * tf.expand_dims(alpha, 2), 1, name='context') #(N, D)
 
-            return context, out_att # Use un-normalized
+            return context, alpha # out_att # Use un-normalized
 
     def _prediction_layer(self, h, reuse=False):
         with tf.variable_scope('prediction_layer', reuse=reuse):
@@ -94,20 +95,21 @@ class Model(object):
             final_loss += tf.reduce_sum(interm_loss)
 
         if self.alpha_c > 0:
-            alpha_loss = 0.0
-            for T in range(self.T):
-                pred_alpha = alpha_list[T] # (N, L)
-                pred_alpha = tf.reshape(pred_alpha, shape=[-1, self.H_attn, self.W_attn, 1]) # (N, 7, 7, 1)
-                grnd_alpha = self.gnd_attn[:, T, :, :, :] # (N, 7, 7, 1)
-                eror_alpha = tf.nn.softmax_cross_entropy_with_logits(labels=grnd_alpha, logits=pred_alpha) # (N,)
-                alpha_loss += tf.reduce_sum(eror_alpha) # (1)
+            # ## Pixel classification loss
+            # alpha_loss = 0.0
+            # for T in range(self.T):
+            #     pred_alpha = alpha_list[T] # (N, L)
+            #     pred_alpha = tf.reshape(pred_alpha, shape=[-1, self.H_attn, self.W_attn, 1]) # (N, 7, 7, 1)
+            #     grnd_alpha = self.gnd_attn[:, T, :, :, :] # (N, 7, 7, 1)
+            #     eror_alpha = tf.nn.softmax_cross_entropy_with_logits(labels=grnd_alpha, logits=pred_alpha) # (N,)
+            #     alpha_loss += tf.reduce_sum(eror_alpha) # (1)
 
             ## KL-loss
             alpha_loss = 0.0
             for T in range(self.T):
                 pred_alpha = alpha_list[T] # (N, L)
-                grnd_alpha = self.gnd_attn[:, T, :, :, :] # (N, L)
-                eror_alpha = tf.distributions.kl_divergence(grnd_alpha, grnd_alpha) # (N,)
+                grnd_alpha = self.gnd_attn[:, T, :] # (N, L)
+                eror_alpha =  grnd_alpha * tf.log(grnd_alpha/(pred_alpha + 0.000001))  # Avoid NaN
                 alpha_loss += tf.reduce_sum(eror_alpha) # (1)
 
             # Weight alpha loss

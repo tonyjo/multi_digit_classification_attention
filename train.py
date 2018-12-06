@@ -37,6 +37,9 @@ class Train(object):
             os.makedirs(self.log_path)
 
     def train(self):
+        # Train Data Loader
+        train_loader = self.data.gen_data_batch(self.batch_size)
+
         # Train dataset
         n_examples = self.data.max_length
         n_iters_per_epoch = int(np.ceil(float(n_examples)/self.batch_size))
@@ -80,7 +83,7 @@ class Train(object):
                 curr_loss = 0
                 start_t   = time.time()
                 for i in range(n_iters_per_epoch):
-                    image_batch, grd_bboxes_batch, grd_attn_batch = next(self.data.gen_data_batch(self.batch_size))
+                    image_batch, grd_bboxes_batch, grd_attn_batch = next(train_loader)
                     feed_dict = {self.model.images: image_batch,
                                  self.model.bboxes: grd_bboxes_batch,
                                  self.model.gnd_attn: grd_attn_batch,
