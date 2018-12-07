@@ -6,7 +6,7 @@ import numpy as np
 from copy import deepcopy
 
 #------------------------------------------------------------------------------
-dataset_type     = 'test' # Change to train/test
+dataset_type     = 'train' # Change to train/test
 dataset_dir      = './dataset'
 curated_dataset  = os.path.join(dataset_dir, dataset_type + '_curated')
 curated_textfile = os.path.join(dataset_dir, dataset_type + '.txt')

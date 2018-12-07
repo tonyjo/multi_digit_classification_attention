@@ -72,7 +72,7 @@ class Train(object):
             sess.run(tf.global_variables_initializer())
             # Tensorboard summary path
             summary_writer = tf.summary.FileWriter(self.log_path, graph=sess.graph)
-            saver = tf.train.Saver(max_to_keep=40)
+            saver = tf.train.Saver(max_to_keep=20)
 
             if self.pretrained_model is not None:
                 print("Start training with pretrained Model..")
@@ -119,9 +119,9 @@ def main():
     model = Model(dim_feature=[49, 256], dim_hidden=128, n_time_step=3,
                   alpha_c=0.5, image_height=64, image_width=64, mode='train')
     # Load Trainer
-    trainer = Train(model, data, val_data=None, n_epochs=30, batch_size=64,
-                    update_rule='adam', learning_rate=0.00001, print_every=100, save_every=1,
-                    pretrained_model='model/lstm1/model-20', model_path='model/lstm1/', log_path='log1/')
+    trainer = Train(model, data, val_data=None, n_epochs=35, batch_size=64,
+                    update_rule='adam', learning_rate=0.000001, print_every=100, save_every=1,
+                    pretrained_model='./model/lstm1/model-35', model_path='model/lstm1/', log_path='log1/')
     # Begin Training
     trainer.train()
 
