@@ -53,7 +53,7 @@ class Model(object):
             alpha   = tf.nn.softmax(out_att)
             context = tf.reduce_sum(features * tf.expand_dims(alpha, 2), 1, name='context') #(N, D)
 
-            return context, alpha # out_att # Use un-normalized
+            return context, alpha # out_att # normalized
 
     def _prediction_layer(self, h, reuse=False):
         with tf.variable_scope('prediction_layer', reuse=reuse):
@@ -95,7 +95,7 @@ class Model(object):
             final_loss += tf.reduce_sum(interm_loss)
 
         if self.alpha_c > 0:
-            # ## Pixel classification loss
+            ## Pixel classification loss
             # alpha_loss = 0.0
             # for T in range(self.T):
             #     pred_alpha = alpha_list[T] # (N, L)

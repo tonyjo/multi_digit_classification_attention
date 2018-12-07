@@ -6,7 +6,7 @@ import numpy as np
 from copy import deepcopy
 
 #------------------------------------------------------------------------------
-dataset_type     = 'train' # Change to train/test
+dataset_type     = 'test' # Change to train/test
 dataset_dir      = './dataset'
 curated_dataset  = os.path.join(dataset_dir, dataset_type + '_curated')
 curated_textfile = os.path.join(dataset_dir, dataset_type + '.txt')
@@ -14,7 +14,6 @@ file_path        = './dataset/%s/' % (dataset_type)
 mat_file         = './dataset/%s/digitStruct.mat' % (dataset_type)
 fixed_num        = 20
 img_size         = (64, 64) # (width, height)
-scales           = np.sqrt(2) * 8
 max_steps        = 3
 ground_attention_downsample = (7, 7)
 
@@ -70,6 +69,14 @@ def gaussian2d(sup, scales):
 
     return g
 
+def softmax(x):
+    """
+    Compute softmax values for each sets of scores in x.
+    """
+    e_x = np.exp(x - np.max(x))
+
+    return e_x / e_x.sum(axis=0)
+
 def generate_ground_gaussian_attention_mask(sample, sample_top, sample_height, sample_left, sample_width):
     """
     Creates a ground truth attention mask based on ground truth bounding boxes,
@@ -85,12 +92,11 @@ def generate_ground_gaussian_attention_mask(sample, sample_top, sample_height, s
 
     sample_attention[sample_top:sample_top+sample_height, sample_left:sample_left+sample_width] = gaussain_normalized
 
-    sample_attention_res = cv2.resize(sample_attention, ground_attention_downsample, interpolation=cv2.INTER_NEAREST)
+    sample_attention_res  = cv2.resize(sample_attention, ground_attention_downsample, interpolation=cv2.INTER_NEAREST)
 
-    #sample_attention_res_norm = (sample_attention_res - np.min(sample_attention_res))/\
-    #                            (np.max(sample_attention_res) - np.min(sample_attention_res))
+    sample_attention_res  = sample_attention_res.flatten()
 
-    sample_attention_res_norm.flattten()
+    sample_attention_res_norm = softmax(sample_attention_res)
 
     return sample_attention, sample_attention_res_norm
 
@@ -161,16 +167,16 @@ with open(curated_textfile, 'w') as ft:
                 sample_heigt = abs(int(all_data[sample_index][1][4][i]))
 
                 if sample_left < lower_x:
-                    lower_x = sample_left
+                    lower_x = deepcopy(sample_left)
 
                 if sample_left + sample_width > upper_x:
-                    upper_x = sample_left + sample_width
+                    upper_x = deepcopy(sample_left + sample_width)
 
                 if sample_top < lower_y:
-                    lower_y = sample_top
+                    lower_y = deepcopy(sample_top)
 
                 if sample_top + sample_heigt > lower_y:
-                    upper_y = sample_top + sample_heigt
+                    upper_y = deepcopy(sample_top + sample_heigt)
 
             #-------------------------------------------------------------------
             # Crop
@@ -203,7 +209,13 @@ with open(curated_textfile, 'w') as ft:
             #-------------------------------------------------------------------
             # Get samples
             sample_heigt_org_rz, sample_width_org_rz, _ = sample_image_copy.shape
-            smpl_img_rz = cv2.resize(sample_image_copy, img_size)
+
+            if sample_width_org_rz > img_size[0]:
+                # Shrinking
+                smpl_img_rz = cv2.resize(sample_image_copy, img_size, interpolation = cv2.INTER_AREA)
+            else:
+                # Zooming
+                smpl_img_rz = cv2.resize(sample_image_copy, img_size, interpolation = cv2.INTER_LINEAR)
 
             if total_samples >=  max_steps:
                 total_samples = max_steps
