@@ -87,10 +87,10 @@ def generate_ground_gaussian_attention_mask(sample, sample_top, sample_height, s
 
     sample_attention_res = cv2.resize(sample_attention, ground_attention_downsample, interpolation=cv2.INTER_NEAREST)
 
-    sample_attention_res_norm = (sample_attention_res - np.min(sample_attention_res))/\
-                                (np.max(sample_attention_res) - np.min(sample_attention_res))
+    #sample_attention_res_norm = (sample_attention_res - np.min(sample_attention_res))/\
+    #                            (np.max(sample_attention_res) - np.min(sample_attention_res))
 
-    sample_attention_res_norm = np.expand_dims(sample_attention_res_norm, axis=3)
+    sample_attention_res_norm.flattten()
 
     return sample_attention, sample_attention_res_norm
 
@@ -218,7 +218,8 @@ with open(curated_textfile, 'w') as ft:
                     sample_width = abs(int((all_data_copy[sample_index][1][3][index_into] * img_size[0])/sample_width_org_rz))
                     sample_heigt = abs(int((all_data_copy[sample_index][1][4][index_into] * img_size[1])/sample_heigt_org_rz))
                     # Generate attention ground truth masks
-                    sample_attention, sample_attention_res = generate_ground_attention_mask(smpl_img_rz, sample_top, sample_heigt, sample_left, sample_width)
+                    sample_attention, sample_attention_res = generate_ground_gaussian_attention_mask(smpl_img_rz, sample_top, sample_heigt, sample_left, sample_width)
+                    # sample_attention, sample_attention_res = generate_ground_attention_mask(smpl_img_rz, sample_top, sample_heigt, sample_left, sample_width)
                     # Append
                     samples_attention.append([sample_attention])
                     samples_attention_rz.append([sample_attention_res])
@@ -240,7 +241,8 @@ with open(curated_textfile, 'w') as ft:
                     sample_width = abs(int((all_data_copy[sample_index][1][3][prev_idx] * img_size[0])/sample_width_org_rz))
                     sample_heigt = abs(int((all_data_copy[sample_index][1][4][prev_idx] * img_size[1])/sample_heigt_org_rz))
                     # Generate attention ground truth masks
-                    sample_attention, sample_attention_res = generate_ground_attention_mask(smpl_img_rz, sample_top, sample_heigt, sample_left, sample_width)
+                    sample_attention, sample_attention_res = generate_ground_gaussian_attention_mask(smpl_img_rz, sample_top, sample_heigt, sample_left, sample_width)
+                    #sample_attention, sample_attention_res = generate_ground_attention_mask(smpl_img_rz, sample_top, sample_heigt, sample_left, sample_width)
                     # Append
                     samples_attention.append([sample_attention])
                     samples_attention_rz.append([sample_attention_res])
