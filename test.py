@@ -18,6 +18,7 @@ class Test(object):
 
     def bbox_iou_center_xy(self, bboxes1, bboxes2):
         """
+        source: https://gist.github.com/vierja/38f93bb8c463dce5500c0adf8648d371
         Args:
             bboxes1: shape (total_bboxes1, 4)
                 with x1, y1, x2, y2 point order.
@@ -130,10 +131,11 @@ def main():
     # Load Model
     model = Model(dim_feature=[49, 128], dim_hidden=128, n_time_step=3,
                   alpha_c=1.0, image_height=64, image_width=64, mode='test')
-    # Load Trainer
+    # Load Inference model
     testing = Test(model, data, batch_size=1, print_every=1000, pretrained_model=None)
-    # Begin Training
+    # Begin Evaluation
     testing.test()
-
+#-------------------------------------------------------------------------------
 if __name__ == "__main__":
     main()
+
