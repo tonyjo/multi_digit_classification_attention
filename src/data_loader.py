@@ -99,10 +99,10 @@ class dataLoader(object):
                     sample_attn_mask = np.load(sample_attn_mask_path)
 
                     # Extract ground boxes-- sample_left, sample_top, sample_width, sample_height
-                    sample_left   = abs(int(sample_data[idx][2]))
-                    sample_top    = abs(int(sample_data[idx][3]))
-                    sample_width  = abs(int(sample_data[idx][4]))
-                    sample_height = abs(int(sample_data[idx][5]))
+                    sample_left   = abs(int(sample_data[idx][2])) * 1.0
+                    sample_top    = abs(int(sample_data[idx][3])) * 1.0
+                    sample_width  = abs(int(sample_data[idx][4])) * 1.0
+                    sample_height = abs(int(sample_data[idx][5])) * 1.0
 
                     all_sample_attn.append(sample_attn_mask)
                     all_sample_data.append([sample_left, sample_top, sample_width, sample_height])

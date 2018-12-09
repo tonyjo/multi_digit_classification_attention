@@ -114,16 +114,17 @@ class Train(object):
 #-------------------------------------------------------------------------------
 def main():
     # Load train dataset
-    data = dataLoader(directory='./dataset', dataset_dir='train_curated', dataset_name='train.txt', max_steps=3, mode='Train')
+    data = dataLoader(directory='./dataset', dataset_dir='train_curated',
+                      dataset_name='train.txt', max_steps=3, mode='Train')
     # Load Model
-    model = Model(dim_feature=[49, 256], dim_hidden=128, n_time_step=3,
-                  alpha_c=0.5, image_height=64, image_width=64, mode='train')
+    model = Model(dim_feature=[49, 128], dim_hidden=128, n_time_step=3,
+                  alpha_c=1.0, image_height=64, image_width=64, mode='train')
     # Load Trainer
-    trainer = Train(model, data, val_data=None, n_epochs=35, batch_size=64,
-                    update_rule='adam', learning_rate=0.000001, print_every=100, save_every=1,
-                    pretrained_model='./model/lstm1/model-35', model_path='model/lstm1/', log_path='log1/')
+    trainer = Train(model, data, val_data=None, n_epochs=50, batch_size=64,
+                    update_rule='adam', learning_rate=0.00001, print_every=100, save_every=1,
+                    pretrained_model='model/lstm1/model-100', model_path='model/lstm1/', log_path='log1/')
     # Begin Training
     trainer.train()
-
+#-------------------------------------------------------------------------------
 if __name__ == "__main__":
     main()

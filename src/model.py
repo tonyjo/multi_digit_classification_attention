@@ -5,11 +5,12 @@ from nets import net
 
 class Model(object):
     def __init__(self, dim_feature=[49, 256], dim_hidden=128, n_time_step=3,
-                 alpha_c=0.0, image_height=64, image_width=64, mode='train'):
-        self.L = dim_feature[0]
-        self.D = dim_feature[1]
-        self.H = dim_hidden
-        self.T = n_time_step
+                 alpha_c=0.0, image_height=64, image_width=64, l2=0.0002, mode='train'):
+        self.L  = dim_feature[0]
+        self.D  = dim_feature[1]
+        self.H  = dim_hidden
+        self.T  = n_time_step
+        self.l2 = l2
         self.mode    = mode
         self.alpha_c = alpha_c
         self.H_attn, self.W_attn = int(np.sqrt(self.L)), int(np.sqrt(self.L))
@@ -32,21 +33,21 @@ class Model(object):
         with tf.variable_scope('initial_lstm'):
             features_mean = tf.reduce_mean(features, 1)
 
-            w_h = tf.get_variable('w_h', [self.D, self.H], initializer=self.weight_initializer)
-            b_h = tf.get_variable('b_h', [self.H], initializer=self.const_initializer)
+            w_h = tf.get_variable(shape=[self.D, self.H], initializer=self.weight_initializer, name='weights')
+            b_h = tf.get_variable(shape=[self.H], initializer=self.const_initializer, name='biases')
             h = tf.nn.tanh(tf.matmul(features_mean, w_h) + b_h)
 
-            w_c = tf.get_variable('w_c', [self.D, self.H], initializer=self.weight_initializer)
-            b_c = tf.get_variable('b_c', [self.H], initializer=self.const_initializer)
+            w_c = tf.get_variable(shape=[self.D, self.H], initializer=self.weight_initializer, name='w_weights')
+            b_c = tf.get_variable(shape=[self.H], initializer=self.const_initializer, name='b_biases')
             c = tf.nn.tanh(tf.matmul(features_mean, w_c) + b_c)
 
             return c, h
 
     def _attention_layer(self, features, h, reuse=False):
         with tf.variable_scope('attention_layer', reuse=reuse):
-            w = tf.get_variable('w', [self.H, self.D], initializer=self.weight_initializer)
-            b = tf.get_variable('b', [self.D], initializer=self.const_initializer)
-            w_att = tf.get_variable('w_att', [self.D, 1], initializer=self.weight_initializer)
+            w = tf.get_variable(shape=[self.H, self.D], initializer=self.weight_initializer, name='weights')
+            b = tf.get_variable(shape=[self.D], initializer=self.const_initializer, name='biases')
+            w_att = tf.get_variable(shape=[self.D, 1], initializer=self.weight_initializer, name='w_weights')
 
             h_att   = tf.nn.relu(features + tf.expand_dims(tf.matmul(h, w), 1) + b) # (N, L, D)
             out_att = tf.reshape(tf.matmul(tf.reshape(h_att, [-1, self.D]), w_att), [-1, self.L]) # (N, L)
@@ -57,8 +58,8 @@ class Model(object):
 
     def _prediction_layer(self, h, reuse=False):
         with tf.variable_scope('prediction_layer', reuse=reuse):
-            w = tf.get_variable('w', [self.H, 4], initializer=self.weight_initializer)
-            b = tf.get_variable('b', [4], initializer=self.const_initializer)
+            w = tf.get_variable(shape=[self.H, 4], initializer=self.weight_initializer, name='weights')
+            b = tf.get_variable(shape=[4], initializer=self.const_initializer, name='biases')
 
             out_logits = tf.matmul(h, w) + b
 
@@ -116,6 +117,15 @@ class Model(object):
             alpha_reg = self.alpha_c * alpha_loss
             # Add alpha loss to
             final_loss += alpha_reg
+
+        if self.l2 > 0:
+            print('L2 regularization:')
+            for var in tf.trainable_variables():
+                tf_var = var.name
+                if tf_var[-8:-2] != 'biases' and tf_var[-6:-2] != 'bias':
+                    print(tf_var)
+                    final_loss = final_loss + (self.l2 * tf.nn.l2_loss(var))
+        print('...............................................................')
 
         return final_loss/tf.to_float(batch_size)
 
