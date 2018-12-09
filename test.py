@@ -9,51 +9,63 @@ from src.model import Model
 from src.data_loader import dataLoader
 
 class Test(object):
-    def __init__(self, model, data, val_data, **kwargs):
-        self.model         = model
-        self.data          = data
-        self.val_data      = val_data
-        self.batch_size    = kwargs.pop('batch_size', 64)
-        self.print_every   = kwargs.pop('print_every', 100)
-        self.log_path      = kwargs.pop('log_path', './log/')
-        self.model_path    = kwargs.pop('model_path', './model/')
+    def __init__(self, model, data, **kwargs):
+        self.model            = model
+        self.data             = data
+        self.batch_size       = kwargs.pop('batch_size', 64)
+        self.print_every      = kwargs.pop('print_every', 100)
         self.pretrained_model = kwargs.pop('pretrained_model', None)
 
-    def bbox_iou_center_xy(bboxes1, bboxes2):
+    def bbox_iou_center_xy(self, bboxes1, bboxes2):
         """
-        same as `bbox_iou_corner_xy', except that we have
-        center_x, center_y, w, h instead of x1, y1, x2, y2
+        Args:
+            bboxes1: shape (total_bboxes1, 4)
+                with x1, y1, x2, y2 point order.
+            bboxes2: shape (total_bboxes2, 4)
+                with x1, y1, x2, y2 point order.
+
+            p1 *-----
+               |     |
+               |_____* p2
+
+        Returns:
+            Tensor with shape (total_bboxes1, total_bboxes2)
+            with the IoU (intersection over union) of bboxes1[i] and bboxes2[j]
+            in [i, j].
         """
 
-        x11, y11, w11, h11 = tf.split(bboxes1, 4, axis=1)
-        x21, y21, w21, h21 = tf.split(bboxes2, 4, axis=1)
+        x11, y11, x12, y12 = tf.split(bboxes1, 4, axis=1)
+        x21, y21, x22, y22 = tf.split(bboxes2, 4, axis=1)
 
-        xi1 = tf.maximum(x11, tf.transpose(x21))
-        xi2 = tf.minimum(x11, tf.transpose(x21))
+        xI1 = tf.maximum(x11, tf.transpose(x21))
+        xI2 = tf.minimum(x12, tf.transpose(x22))
 
-        yi1 = tf.maximum(y11, tf.transpose(y21))
-        yi2 = tf.minimum(y11, tf.transpose(y21))
+        yI1 = tf.minimum(y11, tf.transpose(y21))
+        yI2 = tf.maximum(y12, tf.transpose(y22))
 
-        wi = w11/2.0 + tf.transpose(w21/2.0)
-        hi = h11/2.0 + tf.transpose(h21/2.0)
+        inter_area = tf.maximum((xI2 - xI1), 0) *\
+                     tf.maximum((yI1 - yI2), 0)
 
-        inter_area = tf.maximum(wi - (xi1 - xi2 + 1), 0) *\
-                     tf.maximum(hi - (yi1 - yi2 + 1), 0)
-
-        bboxes1_area = w11 * h11
-        bboxes2_area = w21 * h21
+        bboxes1_area = (x12 - x11) * (y11 - y12)
+        bboxes2_area = (x22 - x21) * (y21 - y22)
 
         union = (bboxes1_area + tf.transpose(bboxes2_area)) - inter_area
 
-        return inter_area/(union + 0.0001)
+        return inter_area / (union + 0.0001)
 
     def test(self):
         # Train dataset
+        test_loader = self.data.gen_data_batch(self.batch_size)
+
         n_examples = self.data.max_length
         n_iters    = int(np.ceil(float(n_examples)/self.batch_size))
 
-        # Build model with loss
-        pred_bboxs_, alpha_list_ = self.model.build_test_model()
+        # Build model with IOU
+        pred_bboxs_, alpha_list_, gnd_bboxs_ = self.model.build_test_model()
+        interm_iou = []
+        for t0 in range(3):
+            iou = self.bbox_iou_center_xy(bboxes1=gnd_bboxs_[:, t0, :], bboxes2=pred_bboxs_[t0])
+            interm_iou.append(iou)
 
         # Summary
         print("Data size:  %d" %n_examples)
@@ -75,28 +87,51 @@ class Test(object):
             else:
                 print("Start testing with Model with random weights...")
 
+            collect_iou = []
             for i in range(n_iters):
-                image_batch, grd_bboxes_batch, _= next(self.data.gen_data_batch(self.batch_size))
+                image_batch, grd_bboxes_batch, _ = next(test_loader)
+
                 feed_dict = {self.model.images: image_batch,
+                             self.model.bboxes: grd_bboxes_batch,
                              self.model.drop_prob: 1.0}
 
-                _, prediction_bboxes = sess.run(pred_bboxs_, feed_dict)
+                iou_out = sess.run(interm_iou, feed_dict)
+
+                collect_iou.append(iou_out)
 
                 if i%self.print_every == 0:
                     print('Epoch Completion..{%d/%d}' % (i, n_iters))
         print('Epoch Completion..{%d/%d}' % (n_iters, n_iters))
         print('Completed!')
+
         # Close session
         sess.close()
+
+        # Compute Final IOU score
+        final_iou     = 0.0
+        total_samples = 0.0
+        collect_iou   = np.array(collect_iou)
+        for t in range(n_iters):
+            sample_iou = 0.0
+            for T in range(3):
+                sample_iou += collect_iou[t, T, 0, 0]
+                total_samples += 1.0
+            final_iou += sample_iou
+
+        mean_iou = final_iou/total_samples
+
+        print('The Final IOU score is: ', mean_iou)
+
 #-------------------------------------------------------------------------------
 def main():
     # Load train dataset
-    data = dataLoader(directory='./dataset', dataset_dir='test_curated', dataset_name='test.txt', max_steps=3, mode='Test')
+    data = dataLoader(directory='./dataset', dataset_dir='test_curated',
+                      dataset_name='test.txt', max_steps=3, mode='Test')
     # Load Model
-    model = Model(dim_feature=[49, 256], dim_hidden=128, n_time_step=3,
-                  alpha_c=0.0, image_height=64, image_width=64, mode='test')
+    model = Model(dim_feature=[49, 128], dim_hidden=128, n_time_step=3,
+                  alpha_c=1.0, image_height=64, image_width=64, mode='test')
     # Load Trainer
-    testing = Test(model, data, batch_size=64, print_every=100, pretrained_model=None)
+    testing = Test(model, data, batch_size=1, print_every=1000, pretrained_model=None)
     # Begin Training
     testing.test()
 

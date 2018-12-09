@@ -155,4 +155,4 @@ class Model(object):
             # Collect Predictions
             pred_bboxs.append(logits)
 
-        return pred_bboxs, alpha_list
+        return pred_bboxs, alpha_list, self.bboxes

@@ -41,6 +41,5 @@ def net(images, mode='train'):
                             weights_initializer=tf.contrib.layers.variance_scaling_initializer(mode='FAN_IN'),
                             stride=2, scope='layer_4')
         layer_4 = _batch_norm(layer_4, mode=mode, name='layer_4')
-        #layer_4 = tf.nn.leaky_relu(layer_4, name='relu_layer_4')
 
         return layer_4
