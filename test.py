@@ -16,9 +16,8 @@ class Test(object):
         self.print_every      = kwargs.pop('print_every', 100)
         self.pretrained_model = kwargs.pop('pretrained_model', None)
 
-    def bbox_iou_center_xy(self, bboxes1, bboxes2):
+    def bb_intersection_over_union(self, boxA, boxB):
         """
-        source: https://gist.github.com/vierja/38f93bb8c463dce5500c0adf8648d371
         Args:
             bboxes1: shape (total_bboxes1, 4)
                 with x1, y1, x2, y2 point order.
@@ -34,25 +33,27 @@ class Test(object):
             with the IoU (intersection over union) of bboxes1[i] and bboxes2[j]
             in [i, j].
         """
+        # determine the (x, y)-coordinates of the intersection rectangle
+        xA = max(boxA[0], boxB[0])
+        yA = max(boxA[1], boxB[1])
+        xB = min(boxA[2], boxB[2])
+        yB = min(boxA[3], boxB[3])
 
-        x11, y11, x12, y12 = tf.split(bboxes1, 4, axis=1)
-        x21, y21, x22, y22 = tf.split(bboxes2, 4, axis=1)
+        # compute the area of intersection rectangle
+        interArea = (xB - xA) * (yB - yA)
 
-        xI1 = tf.maximum(x11, tf.transpose(x21))
-        xI2 = tf.minimum(x12, tf.transpose(x22))
+        # compute the area of both the prediction and ground-truth
+        # rectangles
+        boxAArea = (boxA[2] - boxA[0]) * (boxA[3] - boxA[1])
+        boxBArea = (boxB[2] - boxB[0]) * (boxB[3] - boxB[1])
 
-        yI1 = tf.minimum(y11, tf.transpose(y21))
-        yI2 = tf.maximum(y12, tf.transpose(y22))
+        # compute the intersection over union by taking the intersection
+        # area and dividing it by the sum of prediction + ground-truth
+        # areas - the interesection area
+        iou = interArea / float(boxAArea + boxBArea - interArea)
 
-        inter_area = tf.maximum((xI2 - xI1), 0) *\
-                     tf.maximum((yI1 - yI2), 0)
-
-        bboxes1_area = (x12 - x11) * (y11 - y12)
-        bboxes2_area = (x22 - x21) * (y21 - y22)
-
-        union = (bboxes1_area + tf.transpose(bboxes2_area)) - inter_area
-
-        return inter_area / (union + 0.0001)
+        # return the intersection over union value
+        return iou
 
     def test(self):
         # Train dataset
@@ -62,11 +63,7 @@ class Test(object):
         n_iters    = int(np.ceil(float(n_examples)/self.batch_size))
 
         # Build model with IOU
-        pred_bboxs_, alpha_list_, gnd_bboxs_ = self.model.build_test_model()
-        interm_iou = []
-        for t0 in range(3):
-            iou = self.bbox_iou_center_xy(bboxes1=gnd_bboxs_[:, t0, :], bboxes2=pred_bboxs_[t0])
-            interm_iou.append(iou)
+        pred_bboxs_, alpha_list_ = self.model.build_test_model()
 
         # Summary
         print("Data size:  %d" %n_examples)
@@ -89,6 +86,7 @@ class Test(object):
                 print("Start testing with Model with random weights...")
 
             collect_iou = []
+            collect_grnd_bboxes = []
             for i in range(n_iters):
                 image_batch, grd_bboxes_batch, _ = next(test_loader)
 
@@ -96,9 +94,10 @@ class Test(object):
                              self.model.bboxes: grd_bboxes_batch,
                              self.model.drop_prob: 1.0}
 
-                iou_out = sess.run(interm_iou, feed_dict)
+                pred_bboxs_out = sess.run(pred_bboxs_, feed_dict)
 
-                collect_iou.append(iou_out)
+                collect_iou.append(pred_bboxs_out)
+                collect_grnd_bboxes.append(grd_bboxes_batch)
 
                 if i%self.print_every == 0:
                     print('Epoch Completion..{%d/%d}' % (i, n_iters))
@@ -112,16 +111,39 @@ class Test(object):
         final_iou     = 0.0
         total_samples = 0.0
         collect_iou   = np.array(collect_iou)
+        collect_grnd_bboxes = np.array(collect_grnd_bboxes)
+
+        # print(collect_iou.shape)
+        # print(collect_grnd_bboxes.shape)
+
         for t in range(n_iters):
             sample_iou = 0.0
             for T in range(3):
-                sample_iou += collect_iou[t, T, 0, 0]
+                iterm_pred_bboxes = collect_iou[t, T, 0, :]
+                iterm_grnd_bboxes = collect_grnd_bboxes[t, 0, T, :]
+
+                leftA, topA, widthA, heightA = iterm_grnd_bboxes[0], iterm_grnd_bboxes[1],\
+                                               iterm_grnd_bboxes[2], iterm_grnd_bboxes[3]
+                leftB, topB, widthB, heightB = iterm_pred_bboxes[0], iterm_pred_bboxes[1],\
+                                               iterm_pred_bboxes[2], iterm_pred_bboxes[3],
+
+                rightA = leftA + widthA
+                downA  = topA  + heightA
+                rightB = leftB + widthB
+                downB  = topB  + heightB
+
+                boxA = (leftA, topA, rightA, downA)
+                boxB = (leftB, topB, rightB, downB)
+
+                iterm_iout_sample = self.bb_intersection_over_union(boxA, boxB)
+                sample_iou += iterm_iout_sample
                 total_samples += 1.0
+
             final_iou += sample_iou
 
         mean_iou = final_iou/total_samples
 
-        print('The Final IOU score is: ', mean_iou)
+        print('The Final Mean IOU score is: ', mean_iou)
 
 #-------------------------------------------------------------------------------
 def main():
@@ -132,10 +154,9 @@ def main():
     model = Model(dim_feature=[49, 128], dim_hidden=128, n_time_step=3,
                   alpha_c=1.0, image_height=64, image_width=64, mode='test')
     # Load Inference model
-    testing = Test(model, data, batch_size=1, print_every=1000, pretrained_model=None)
+    testing = Test(model, data, batch_size=1, print_every=2000, pretrained_model='model/lstm1/model-50')
     # Begin Evaluation
     testing.test()
 #-------------------------------------------------------------------------------
 if __name__ == "__main__":
     main()
-
