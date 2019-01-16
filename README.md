@@ -1,1 +1,2 @@
-# multi_digit_classification_attention
+# Multi-digit detection and classification via attention
+

@@ -65,7 +65,7 @@ def gaussian2d(sup, scales):
 
         x,y = np.ogrid[-m:m+incr_x,-n:n+incr_y]
 
-    g = (1/np.sqrt(2*np.pi*var))*np.exp( -(x*x + y*y) / (2*var) )
+    g = (1/np.sqrt(2*np.pi*var))*np.exp( -(x*x + y*y) / (2*var))
 
     return g
 
@@ -124,164 +124,181 @@ f = h5py.File(mat_file,'r')
 print('Total bboxes: ', f['/digitStruct/name'].shape[0])
 
 all_data = []
-for j in range(f['/digitStruct/bbox'].shape[0]):
-#for j in range(test_range):
+#for j in range(f['/digitStruct/bbox'].shape[0]):
+for j in range(1000):
     img_name = get_name(j, f)
     row_dict = get_bbox(j, f)
 
     all_data.append([img_name, row_dict])
 
-    if j%4000 == 0:
+    if j%100 == 0:
         print('Completion..{%d/%d}' % (j, f['/digitStruct/bbox'].shape[0]))
+
+        ## -- debug
+        # check how many samples:
+        total_samples = np.array(all_data[j][1]).shape[1]
+        print(np.array(all_data[j][1]).shape)
+        print('total samples: ', total_samples)
+        for k in range(total_samples):
+            sample_left  = abs(int(all_data[j][1][1][k]))
+            sample_top   = abs(int(all_data[j][1][2][k]))
+            sample_width = abs(int(all_data[j][1][3][k]))
+            sample_heigt = abs(int(all_data[j][1][4][k]))
+            print('first: ', abs(int(all_data[j][1][0][k])))
+            print('Sample left:   ', sample_left)
+            print('Sample right:  ', sample_top)
+            print('Sample width:  ', sample_width)
+            print('Sample height: ', sample_heigt)
+        print('#--------------------------------------------------')
 
 print('Completion..{%d/%d}' % (f['/digitStruct/bbox'].shape[0], f['/digitStruct/bbox'].shape[0]))
 print('Completed!')
 
-# Create copy of samples
-all_data_copy = deepcopy(all_data)
-
-#------------------------------------------------------------------------------
-with open(curated_textfile, 'w') as ft:
-    #for sample_index in range(test_range):
-    for sample_index in range(len(all_data)):
-        try:
-            sample_imgph = all_data[sample_index][0]
-            sample_image = cv2.imread(file_path+sample_imgph)
-            sample_image_copy = sample_image
-
-            sample_heigt_org, sample_width_org, _ = sample_image.shape
-            #-------------------------------------------------------------------
-            ## Bounds
-            lower_x = 1000
-            upper_x = 0
-            lower_y = 1000
-            upper_y = 0
-
-            # check how many samples:
-            total_samples = np.array(all_data[sample_index][1]).shape[1]
-
-            for i in range(total_samples):
-                sample_left  = abs(int(all_data[sample_index][1][1][i]))
-                sample_top   = abs(int(all_data[sample_index][1][2][i]))
-                sample_width = abs(int(all_data[sample_index][1][3][i]))
-                sample_heigt = abs(int(all_data[sample_index][1][4][i]))
-
-                if sample_left < lower_x:
-                    lower_x = deepcopy(sample_left)
-
-                if sample_left + sample_width > upper_x:
-                    upper_x = deepcopy(sample_left + sample_width)
-
-                if sample_top < lower_y:
-                    lower_y = deepcopy(sample_top)
-
-                if sample_top + sample_heigt > lower_y:
-                    upper_y = deepcopy(sample_top + sample_heigt)
-
-            #-------------------------------------------------------------------
-            # Crop
-            if lower_x - fixed_num > 0:
-                start = abs(lower_x - fixed_num)
-                sample_image_copy = sample_image_copy[:, start:, :]
-                # Include fixed pixels from all lower bound-- left
-                for i in range(total_samples):
-                    all_data_copy[sample_index][1][1][i] -= start
-                upper_x_copy = upper_x - start
-            else:
-                upper_x_copy = upper_x
-
-            if upper_x + fixed_num < sample_width_org:
-                sample_image_copy = sample_image_copy[:, :upper_x_copy + fixed_num, :]
-
-            if lower_y - fixed_num > 0:
-                end = abs(lower_y - fixed_num)
-                sample_image_copy = sample_image_copy[end:, :, :]
-                # Include fixed pixels from all upper bound-- top
-                for i in range(total_samples):
-                    all_data_copy[sample_index][1][2][i] -= end
-                upper_y_copy = upper_y - end
-            else:
-                upper_y_copy = upper_y
-
-            if upper_y + fixed_num > sample_heigt_org:
-                sample_image_copy = sample_image_copy[:upper_y_copy + fixed_num, :, :]
-
-            #-------------------------------------------------------------------
-            # Get samples
-            sample_heigt_org_rz, sample_width_org_rz, _ = sample_image_copy.shape
-
-            if sample_width_org_rz > img_size[0]:
-                # Shrinking
-                smpl_img_rz = cv2.resize(sample_image_copy, img_size, interpolation = cv2.INTER_AREA)
-            else:
-                # Zooming
-                smpl_img_rz = cv2.resize(sample_image_copy, img_size, interpolation = cv2.INTER_LINEAR)
-
-            if total_samples >=  max_steps:
-                total_samples = max_steps
-                # Collect samples
-                samples = []
-                samples_attention = []
-                samples_attention_rz = []
-                for index_into in range(total_samples):
-                    sample_label = int( all_data_copy[sample_index][1][0][index_into])
-                    sample_left  = abs(int((all_data_copy[sample_index][1][1][index_into] * img_size[0])/sample_width_org_rz))
-                    sample_top   = abs(int((all_data_copy[sample_index][1][2][index_into] * img_size[1])/sample_heigt_org_rz))
-                    sample_width = abs(int((all_data_copy[sample_index][1][3][index_into] * img_size[0])/sample_width_org_rz))
-                    sample_heigt = abs(int((all_data_copy[sample_index][1][4][index_into] * img_size[1])/sample_heigt_org_rz))
-                    # Generate attention ground truth masks
-                    sample_attention, sample_attention_res = generate_ground_gaussian_attention_mask(smpl_img_rz, sample_top, sample_heigt, sample_left, sample_width)
-                    # sample_attention, sample_attention_res = generate_ground_attention_mask(smpl_img_rz, sample_top, sample_heigt, sample_left, sample_width)
-                    # Append
-                    samples_attention.append([sample_attention])
-                    samples_attention_rz.append([sample_attention_res])
-                    samples.append([all_data_copy[sample_index][0][:-4], sample_label, sample_left, sample_top, sample_width, sample_heigt])
-            else:
-                # Collect samples
-                prev_idx = 0
-                samples  = []
-                samples_attention = []
-                samples_attention_rz = []
-                for index_to in range(max_steps):
-                    # Duplicate samples
-                    if index_to + 1 <= total_samples:
-                        prev_idx = index_to
-
-                    sample_label = int( all_data_copy[sample_index][1][0][prev_idx])
-                    sample_left  = abs(int((all_data_copy[sample_index][1][1][prev_idx] * img_size[0])/sample_width_org_rz))
-                    sample_top   = abs(int((all_data_copy[sample_index][1][2][prev_idx] * img_size[1])/sample_heigt_org_rz))
-                    sample_width = abs(int((all_data_copy[sample_index][1][3][prev_idx] * img_size[0])/sample_width_org_rz))
-                    sample_heigt = abs(int((all_data_copy[sample_index][1][4][prev_idx] * img_size[1])/sample_heigt_org_rz))
-                    # Generate attention ground truth masks
-                    sample_attention, sample_attention_res = generate_ground_gaussian_attention_mask(smpl_img_rz, sample_top, sample_heigt, sample_left, sample_width)
-                    #sample_attention, sample_attention_res = generate_ground_attention_mask(smpl_img_rz, sample_top, sample_heigt, sample_left, sample_width)
-                    # Append
-                    samples_attention.append([sample_attention])
-                    samples_attention_rz.append([sample_attention_res])
-                    samples.append([all_data_copy[sample_index][0][:-4], sample_label, sample_left, sample_top, sample_width, sample_heigt])
-
-            #-------------------------------------------------------------------
-            # New sample Image path
-            new_sample_image_path = os.path.join(curated_dataset, all_data_copy[sample_index][0])
-            # Save
-            cv2.imwrite(new_sample_image_path, smpl_img_rz)
-            for j in range(max_steps):
-                # Save ground attention-- from path remove png and add npy
-                sample_attn_image_path = os.path.join(dataset_dir, dataset_type + '_curated', all_data_copy[sample_index][0][:-4] + '_' + str(j) + '.npy')
-                np.save(sample_attn_image_path, samples_attention_rz[j][0])
-            # Write
-            ft.write(str(samples))
-            ft.write('\n')
-
-            #-------------------------------------------------------------------
-            if sample_index%4000 == 0:
-                print('Completion..{%d/%d}' % (sample_index, len(all_data)))
-
-        except ValueError:
-            print('Ignoring data: ', sample_imgph)
-
-# Close
-ft.close()
-print('Completion..{%d/%d}' % (len(all_data), len(all_data)))
-print('Completed!')
-#------------------------------------------------------------------------------
+# # Create copy of samples
+# all_data_copy = deepcopy(all_data)
+#
+# #------------------------------------------------------------------------------
+# with open(curated_textfile, 'w') as ft:
+#     #for sample_index in range(test_range):
+#     for sample_index in range(len(all_data)):
+#         try:
+#             sample_imgph = all_data[sample_index][0]
+#             sample_image = cv2.imread(file_path+sample_imgph)
+#             sample_image_copy = sample_image
+#
+#             sample_heigt_org, sample_width_org, _ = sample_image.shape
+#             #-------------------------------------------------------------------
+#             ## Bounds
+#             lower_x = 1000
+#             upper_x = 0
+#             lower_y = 1000
+#             upper_y = 0
+#
+#             # check how many samples:
+#             total_samples = np.array(all_data[sample_index][1]).shape[1]
+#
+#             for i in range(total_samples):
+#                 sample_left  = abs(int(all_data[sample_index][1][1][i]))
+#                 sample_top   = abs(int(all_data[sample_index][1][2][i]))
+#                 sample_width = abs(int(all_data[sample_index][1][3][i]))
+#                 sample_heigt = abs(int(all_data[sample_index][1][4][i]))
+#
+#                 if sample_left < lower_x:
+#                     lower_x = deepcopy(sample_left)
+#
+#                 if sample_left + sample_width > upper_x:
+#                     upper_x = deepcopy(sample_left + sample_width)
+#
+#                 if sample_top < lower_y:
+#                     lower_y = deepcopy(sample_top)
+#
+#                 if sample_top + sample_heigt > lower_y:
+#                     upper_y = deepcopy(sample_top + sample_heigt)
+#
+#             #-------------------------------------------------------------------
+#             # Crop
+#             if lower_x - fixed_num > 0:
+#                 start = abs(lower_x - fixed_num)
+#                 sample_image_copy = sample_image_copy[:, start:, :]
+#                 # Include fixed pixels from all lower bound-- left
+#                 for i in range(total_samples):
+#                     all_data_copy[sample_index][1][1][i] -= start
+#                 upper_x_copy = upper_x - start
+#             else:
+#                 upper_x_copy = upper_x
+#
+#             if upper_x + fixed_num < sample_width_org:
+#                 sample_image_copy = sample_image_copy[:, :upper_x_copy + fixed_num, :]
+#
+#             if lower_y - fixed_num > 0:
+#                 end = abs(lower_y - fixed_num)
+#                 sample_image_copy = sample_image_copy[end:, :, :]
+#                 # Include fixed pixels from all upper bound-- top
+#                 for i in range(total_samples):
+#                     all_data_copy[sample_index][1][2][i] -= end
+#                 upper_y_copy = upper_y - end
+#             else:
+#                 upper_y_copy = upper_y
+#
+#             if upper_y + fixed_num > sample_heigt_org:
+#                 sample_image_copy = sample_image_copy[:upper_y_copy + fixed_num, :, :]
+#
+#             #-------------------------------------------------------------------
+#             # Get samples
+#             sample_heigt_org_rz, sample_width_org_rz, _ = sample_image_copy.shape
+#
+#             if sample_width_org_rz > img_size[0]:
+#                 # Shrinking
+#                 smpl_img_rz = cv2.resize(sample_image_copy, img_size, interpolation = cv2.INTER_AREA)
+#             else:
+#                 # Zooming
+#                 smpl_img_rz = cv2.resize(sample_image_copy, img_size, interpolation = cv2.INTER_LINEAR)
+#
+#             if total_samples >=  max_steps:
+#                 total_samples = max_steps
+#                 # Collect samples
+#                 samples = []
+#                 samples_attention = []
+#                 samples_attention_rz = []
+#                 for index_into in range(total_samples):
+#                     sample_label = int( all_data_copy[sample_index][1][0][index_into])
+#                     sample_left  = abs(int((all_data_copy[sample_index][1][1][index_into] * img_size[0])/sample_width_org_rz))
+#                     sample_top   = abs(int((all_data_copy[sample_index][1][2][index_into] * img_size[1])/sample_heigt_org_rz))
+#                     sample_width = abs(int((all_data_copy[sample_index][1][3][index_into] * img_size[0])/sample_width_org_rz))
+#                     sample_heigt = abs(int((all_data_copy[sample_index][1][4][index_into] * img_size[1])/sample_heigt_org_rz))
+#                     # Generate attention ground truth masks
+#                     sample_attention, sample_attention_res = generate_ground_gaussian_attention_mask(smpl_img_rz, sample_top, sample_heigt, sample_left, sample_width)
+#                     # sample_attention, sample_attention_res = generate_ground_attention_mask(smpl_img_rz, sample_top, sample_heigt, sample_left, sample_width)
+#                     # Append
+#                     samples_attention.append([sample_attention])
+#                     samples_attention_rz.append([sample_attention_res])
+#                     samples.append([all_data_copy[sample_index][0][:-4], sample_label, sample_left, sample_top, sample_width, sample_heigt])
+#             else:
+#                 # Collect samples
+#                 prev_idx = 0
+#                 samples  = []
+#                 samples_attention = []
+#                 samples_attention_rz = []
+#                 for index_to in range(max_steps):
+#                     # Duplicate samples
+#                     if index_to + 1 <= total_samples:
+#                         prev_idx = index_to
+#
+#                     sample_label = int( all_data_copy[sample_index][1][0][prev_idx])
+#                     sample_left  = abs(int((all_data_copy[sample_index][1][1][prev_idx] * img_size[0])/sample_width_org_rz))
+#                     sample_top   = abs(int((all_data_copy[sample_index][1][2][prev_idx] * img_size[1])/sample_heigt_org_rz))
+#                     sample_width = abs(int((all_data_copy[sample_index][1][3][prev_idx] * img_size[0])/sample_width_org_rz))
+#                     sample_heigt = abs(int((all_data_copy[sample_index][1][4][prev_idx] * img_size[1])/sample_heigt_org_rz))
+#                     # Generate attention ground truth masks
+#                     sample_attention, sample_attention_res = generate_ground_gaussian_attention_mask(smpl_img_rz, sample_top, sample_heigt, sample_left, sample_width)
+#                     #sample_attention, sample_attention_res = generate_ground_attention_mask(smpl_img_rz, sample_top, sample_heigt, sample_left, sample_width)
+#                     # Append
+#                     samples_attention.append([sample_attention])
+#                     samples_attention_rz.append([sample_attention_res])
+#                     samples.append([all_data_copy[sample_index][0][:-4], sample_label, sample_left, sample_top, sample_width, sample_heigt])
+#
+#             #-------------------------------------------------------------------
+#             # New sample Image path
+#             new_sample_image_path = os.path.join(curated_dataset, all_data_copy[sample_index][0])
+#             # Save
+#             cv2.imwrite(new_sample_image_path, smpl_img_rz)
+#             for j in range(max_steps):
+#                 # Save ground attention-- from path remove png and add npy
+#                 sample_attn_image_path = os.path.join(dataset_dir, dataset_type + '_curated', all_data_copy[sample_index][0][:-4] + '_' + str(j) + '.npy')
+#                 np.save(sample_attn_image_path, samples_attention_rz[j][0])
+#             # Write
+#             ft.write(str(samples))
+#             ft.write('\n')
+#
+#             #-------------------------------------------------------------------
+#             if sample_index%4000 == 0:
+#                 print('Completion..{%d/%d}' % (sample_index, len(all_data)))
+#
+#         except ValueError:
+#             print('Ignoring data: ', sample_imgph)
+#
+# # Close
+# ft.close()
+# print('Completion..{%d/%d}' % (len(all_data), len(all_data)))
+# print('Completed!')
+# #------------------------------------------------------------------------------
