@@ -18,7 +18,9 @@ max_steps        = 5
 
 if os.path.exists(curated_dataset) == False:
     os.mkdir(curated_dataset)
-#------------------------------------------------------------------------------
+
+
+#---------------------------- Functions ----------------------------------------
 def get_name(index, hdf5_data):
     name = hdf5_data['/digitStruct/name']
     return ''.join([chr(v[0]) for v in hdf5_data[name[index][0]].value])
@@ -60,7 +62,7 @@ def biggest_box(all_data, sample_index, total_samples):
 #-------------------------------------------------------------------------------
 
 
-#-------------------------------------MAIN--------------------------------------
+#--------------------------------- MAIN ----------------------------------------
 expand_percent = expand_percent/100
 
 f = h5py.File(mat_file,'r')
@@ -101,7 +103,6 @@ print('Completed!')
 all_data_copy = deepcopy(all_data)
 #-------------------------------------------------------------------------------
 
-
 with open(curated_textfile, 'w') as ft:
     for sample_index in range(len(all_data)):
         try:
@@ -109,21 +110,16 @@ with open(curated_textfile, 'w') as ft:
             sample_image = cv2.imread(file_path+sample_imgph)
             sample_image_copy = deepcopy(sample_image)
             sample_heigt_org, sample_width_org, _ = sample_image.shape
+            # Get how many digits:
+            total_samples = np.array(all_data[sample_index][1]).shape[1]
+
             #-------------------------------------------------------------------
             ## Get bounding box encompassing all digits
-
-            # check how many samples:
-            total_samples = np.array(all_data[sample_index][1]).shape[1]
             low_left, low_top, high_width, high_height = biggest_box(all_data=all_data,\
                                   sample_index=sample_index, total_samples=total_samples)
 
             #-------------------------------------------------------------------
             ## Crop
-            start_x = 0
-            start_y = 0
-            width_x = 0
-            height_y = 0
-
             # Obtain the spatial extend to crop
             low_x  = low_left - int(expand_percent * low_left)
             low_y  = low_top  - int(expand_percent * low_top)
@@ -156,7 +152,8 @@ with open(curated_textfile, 'w') as ft:
             if high_y < sample_heigt_org:
                 sample_image_copy = sample_image_copy[:high_y, :, :]
 
-            # Resize image
+            #-------------------------------------------------------------------
+            ## Resize image
             sample_heigt_org_rz, sample_width_org_rz, _ = sample_image_copy.shape
 
             if sample_width_org_rz > img_size[0]:
@@ -166,7 +163,7 @@ with open(curated_textfile, 'w') as ft:
                 # Zooming
                 smpl_img_rz = cv2.resize(sample_image_copy, img_size, interpolation = cv2.INTER_LINEAR)
 
-
+            #-------------------------------------------------------------------
             ## Curate labels to match new image shape
             for index_into in range(max_steps):
                 # Collect samples
@@ -181,7 +178,7 @@ with open(curated_textfile, 'w') as ft:
                     sample_heigt = 0
 
                 else:
-                    sample_label = int( all_data_copy[sample_index][1][0][index_into])
+                    sample_label = int(all_data_copy[sample_index][1][0][index_into])
                     sample_left  = abs(int((all_data_copy[sample_index][1][1][index_into] * img_size[0])/sample_width_org_rz))
                     sample_top   = abs(int((all_data_copy[sample_index][1][2][index_into] * img_size[1])/sample_heigt_org_rz))
                     sample_width = abs(int((all_data_copy[sample_index][1][3][index_into] * img_size[0])/sample_width_org_rz))
@@ -193,14 +190,11 @@ with open(curated_textfile, 'w') as ft:
                 samples.append([all_data_copy[sample_index][0][:-4], sample_label, sample_left, sample_top, sample_width, sample_heigt])
 
             #-------------------------------------------------------------------
+            ## Write and save
             # New sample Image path
             new_sample_image_path = os.path.join(curated_dataset, all_data_copy[sample_index][0])
             # Save
             cv2.imwrite(new_sample_image_path, smpl_img_rz)
-            for j in range(max_steps):
-                # Save ground attention-- from path remove png and add npy
-                sample_attn_image_path = os.path.join(dataset_dir, dataset_type + '_curated', all_data_copy[sample_index][0][:-4] + '_' + str(j) + '.npy')
-                np.save(sample_attn_image_path, samples_attention_rz[j][0])
             # Write
             ft.write(str(samples))
             ft.write('\n')
