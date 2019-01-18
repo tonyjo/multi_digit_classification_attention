@@ -59,6 +59,19 @@ def biggest_box(all_data, sample_index, total_samples):
     highest_height = max(all_heigt) - low_top
 
     return low_left, low_top, highest_width, highest_height
+
+def check_low_extend(check_ex):
+    if check_ex < 0:
+        return 0
+    else:
+        return check_ex
+
+def check_high_extend(check_ex, low_ex, orgsample_dim):
+    if (low_ex + check_ex) > orgsample_dim:
+        delta = (low_ex + check_ex) - orgsample_dim
+        return check_ex - delta
+    else:
+        return check_ex
 #-------------------------------------------------------------------------------
 
 
@@ -122,22 +135,29 @@ with open(curated_textfile, 'w') as ft:
             ## Crop
             # Obtain the spatial extend to crop
             low_x  = low_left - int(expand_percent * low_left)
+            low_x  = check_low_extend(check_ex=low_x)
+
             low_y  = low_top  - int(expand_percent * low_top)
-            high_x = (low_left + high_width)  + int(expand_percent * (low_left + high_width))
-            high_y = (low_top  + high_height) + int(expand_percent * (low_top  + high_height))
+            low_y  = check_low_extend(check_ex=low_y)
+
+            high_x = high_width  + int(expand_percent * high_width)
+            high_x = check_high_extend(check_ex=high_x, low_ex=low_x,\
+                                          orgsample_dim=sample_width_org)
+
+            high_y = high_height + int(expand_percent * high_height)
+            high_y = check_high_extend(check_ex=high_y, low_ex=low_y,\
+                                          orgsample_dim=sample_heigt_org)
 
             #------- X-axis shift -------
             if low_x > 0:
                 sample_image_copy = sample_image_copy[:, low_x:, :]
-                # Include fixed pixels from all lower bound-- left
+                # Update
                 for i in range(total_samples):
+                    # Update lower bound-- left
                     all_data_copy[sample_index][1][1][i] -= low_x
-                high_x_copy = high_x - start
-            else:
-                high_x_copy = high_x
 
             if high_x < sample_width_org:
-                sample_image_copy = sample_image_copy[:, :high_x, :]
+                sample_image_copy = sample_image_copy[:, :(low_x+high_x), :]
 
             #------- Y-axis shift-------
             if low_y > 0:
@@ -145,12 +165,9 @@ with open(curated_textfile, 'w') as ft:
                 # Include fixed pixels from all upper bound-- top
                 for i in range(total_samples):
                     all_data_copy[sample_index][1][2][i] -= low_y
-                high_y_copy = high_y - low_y
-            else:
-                high_y_copy = high_y
 
             if high_y < sample_heigt_org:
-                sample_image_copy = sample_image_copy[:high_y, :, :]
+                sample_image_copy = sample_image_copy[:(low_y+high_y), :, :]
 
             #-------------------------------------------------------------------
             ## Resize image
@@ -165,11 +182,9 @@ with open(curated_textfile, 'w') as ft:
 
             #-------------------------------------------------------------------
             ## Curate labels to match new image shape
+            # Collect samples
+            samples = []
             for index_into in range(max_steps):
-                # Collect samples
-                samples = []
-                samples_attention = []
-                samples_attention_rz = []
                 if index_into > total_samples - 1:
                     sample_label = 0
                     sample_left  = 0
@@ -185,10 +200,8 @@ with open(curated_textfile, 'w') as ft:
                     sample_heigt = abs(int((all_data_copy[sample_index][1][4][index_into] * img_size[1])/sample_heigt_org_rz))
 
                 # Append
-                samples_attention.append([sample_attention])
-                samples_attention_rz.append([sample_attention_res])
                 samples.append([all_data_copy[sample_index][0][:-4], sample_label, sample_left, sample_top, sample_width, sample_heigt])
-
+                
             #-------------------------------------------------------------------
             ## Write and save
             # New sample Image path
