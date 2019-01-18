@@ -69,7 +69,8 @@ def check_low_extend(check_ex):
 def check_high_extend(check_ex, low_ex, orgsample_dim):
     if (low_ex + check_ex) > orgsample_dim:
         delta = (low_ex + check_ex) - orgsample_dim
-        return check_ex - delta
+        check_ex = check_ex - delta
+        return check_ex
     else:
         return check_ex
 #-------------------------------------------------------------------------------
@@ -201,7 +202,7 @@ with open(curated_textfile, 'w') as ft:
 
                 # Append
                 samples.append([all_data_copy[sample_index][0][:-4], sample_label, sample_left, sample_top, sample_width, sample_heigt])
-                
+
             #-------------------------------------------------------------------
             ## Write and save
             # New sample Image path
