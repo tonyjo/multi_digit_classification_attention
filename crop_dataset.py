@@ -63,7 +63,7 @@ def biggest_box(all_data, sample_index, total_samples):
 
 
 #--------------------------------- MAIN ----------------------------------------
-expand_percent = expand_percent/100
+expand_percent = expand_percent/100.0
 
 f = h5py.File(mat_file,'r')
 print('Total bboxes: ', f['/digitStruct/name'].shape[0])
