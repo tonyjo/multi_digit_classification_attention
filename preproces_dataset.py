@@ -12,9 +12,8 @@ curated_dataset  = os.path.join(dataset_dir, dataset_type + '_curated')
 curated_textfile = os.path.join(dataset_dir, dataset_type + '.txt')
 file_path        = './dataset/%s/' % (dataset_type)
 mat_file         = './dataset/%s/digitStruct.mat' % (dataset_type)
-fixed_num        = 20
 img_size         = (64, 64) # (width, height)
-max_steps        = 3
+max_steps        = 5
 ground_attention_downsample = (7, 7)
 
 #---------------------------- Functions ----------------------------------------
@@ -39,7 +38,7 @@ def softmax(x):
 
     return e_x / e_x.sum(axis=0)
 
-def generate_ground_gaussian_attention_mask(sample, sample_top, sample_height, sample_left, sample_width):
+def generate_ground_gaussian_attention_mask(sample, sample_top, sample_left, sample_height, sample_width):
     """
     Creates a ground truth attention mask based on ground truth bounding boxes,
     and scales to fit into the box.
@@ -69,4 +68,54 @@ def generate_ground_gaussian_attention_mask(sample, sample_top, sample_height, s
     sample_attention_res_norm = np.reshape(sample_attention_res_norm, ground_attention_downsample)
 
     return sample_attention, sample_attention_res_norm
+
+def biggest_box(samples):
+    """
+    Compute the box encompassing all the digits.
+    """
+    all_left  = []
+    all_top   = []
+    all_width = []
+    all_heigt = []
+
+    for k in range(total_samples):
+        sample_label = samples[k][1]
+        sample_left  = samples[k][2]
+        sample_top   = samples[k][3]
+        sample_width = samples[k][4]
+        sample_heigt = samples[k][5]
+
+        all_left.append(sample_left)
+        all_top.append(sample_top)
+        all_width.append(sample_left+sample_width)
+        all_heigt.append(sample_top+sample_heigt)
+
+    low_left = min(all_left)
+    low_top  = min(all_top)
+    highest_width = max(all_width) - low_left
+    highest_height = max(all_heigt) - low_top
+
+    return low_left, low_top, highest_width, highest_height
+
+def generate_stop_attention_mask(samples, sample_image):
+    """
+    Create an attention mask for the stop state, which is a uniform mask
+    around the digits.
+    """
+    sample_image_height, sample_image_width, _ = sample_image.shape
+
+    low_left, low_top, highest_width, highest_height = biggest_box(samples)
+
+    x = np.ones((sample_image_height, sample_image_width))
+
+    mask = np.ones((sample_image_height, sample_image_width))
+    mask[low_top:low_top+highest_height, low_left:low_left+highest_width] = 0
+
+    x2 = np.multiply(x, mask)
+    x3 = softmax(x2.flatten())
+    x3 = np.reshape(x3, (sample_image_height, sample_image_width))
+
+    return x3
 #------------------------------------------------------------------------------
+
+#--------------------------------- MAIN ----------------------------------------
