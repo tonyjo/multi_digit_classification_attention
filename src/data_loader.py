@@ -11,6 +11,7 @@ class dataLoader(object):
         self.directory    = directory
         self.dataset_dir  = dataset_dir
         self.dataset_name = dataset_name
+        self.attn_grd_dir = dataset_name[:-4] + '_attn_grnd'
         self.load_data()
 
     def load_data(self):
@@ -95,9 +96,9 @@ class dataLoader(object):
                 all_sample_attn = []
                 for idx in range(self.max_steps):
                     # Get ground attention mask
-                    sample_attn_mask_path = os.path.join(self.directory, self.dataset_dir, sample_data[0][0][:-4] + '_' + str(idx) + '.npy')
+                    sample_attn_mask_path = os.path.join(self.directory, self.attn_grd_dir, sample_data[0][0][:-4] + '_' + str(idx) + '.npy')
                     sample_attn_mask = np.load(sample_attn_mask_path)
-
+                    sample_attn_mask = sample_attn_mask.flatten()
                     # Extract ground boxes-- sample_left, sample_top, sample_width, sample_height
                     sample_left   = abs(int(sample_data[idx][2])) * 1.0
                     sample_top    = abs(int(sample_data[idx][3])) * 1.0

@@ -84,6 +84,7 @@ class Train(object):
                 start_t   = time.time()
                 for i in range(n_iters_per_epoch):
                     image_batch, grd_bboxes_batch, grd_attn_batch = next(train_loader)
+
                     feed_dict = {self.model.images: image_batch,
                                  self.model.bboxes: grd_bboxes_batch,
                                  self.model.gnd_attn: grd_attn_batch,
@@ -114,7 +115,7 @@ class Train(object):
 #-------------------------------------------------------------------------------
 def main():
     # Load train dataset
-    data = dataLoader(directory='./dataset', dataset_dir='train_curated',
+    data = dataLoader(directory='./dataset', dataset_dir='train_cropped',
                       dataset_name='train.txt', max_steps=5, mode='Train')
     # Load Model
     model = Model(dim_feature=[49, 128], dim_hidden=128, n_time_step=5,
@@ -122,7 +123,7 @@ def main():
     # Load Trainer
     trainer = Train(model, data, val_data=None, n_epochs=50, batch_size=64,
                     update_rule='adam', learning_rate=0.00001, print_every=100, save_every=1,
-                    pretrained_model='model/lstm1/model-100', model_path='model/lstm1/', log_path='log1/')
+                    pretrained_model=None, model_path='model/lstm1/', log_path='log1/')
     # Begin Training
     trainer.train()
 #-------------------------------------------------------------------------------
