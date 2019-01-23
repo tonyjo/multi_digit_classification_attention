@@ -83,14 +83,14 @@ f = h5py.File(mat_file,'r')
 print('Total bboxes: ', f['/digitStruct/name'].shape[0])
 
 all_data = []
-#for j in range(f['/digitStruct/bbox'].shape[0]):
-for j in range(1000):
+for j in range(f['/digitStruct/bbox'].shape[0]):
+#for j in range(1000):
     img_name = get_name(j, f)
     row_dict = get_bbox(j, f)
 
     all_data.append([img_name, row_dict])
 
-    if j%100 == 0:
+    if j%4000 == 0:
         print('Completion..{%d/%d}' % (j, f['/digitStruct/bbox'].shape[0]))
 
         ## -- debug
