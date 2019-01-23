@@ -7,7 +7,7 @@ import numpy as np
 from copy import deepcopy
 
 parser = argparse.ArgumentParser()
-parser.add_argument("--dataset_type", type=str, help="where the dataset is stored")
+parser.add_argument("--dataset_type", type=str, help="train/test")
 parser.add_argument("--dataset_dir",  type=str, default="./dataset")
 parser.add_argument("--max_steps",    type=int, default=5, help="max steps")
 parser.add_argument("--img_height",   type=int, default=64, help="image height")
