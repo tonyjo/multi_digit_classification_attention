@@ -115,9 +115,9 @@ class Train(object):
 def main():
     # Load train dataset
     data = dataLoader(directory='./dataset', dataset_dir='train_curated',
-                      dataset_name='train.txt', max_steps=3, mode='Train')
+                      dataset_name='train.txt', max_steps=5, mode='Train')
     # Load Model
-    model = Model(dim_feature=[49, 128], dim_hidden=128, n_time_step=3,
+    model = Model(dim_feature=[49, 128], dim_hidden=128, n_time_step=5,
                   alpha_c=5.0, image_height=64, image_width=64, mode='train')
     # Load Trainer
     trainer = Train(model, data, val_data=None, n_epochs=50, batch_size=64,

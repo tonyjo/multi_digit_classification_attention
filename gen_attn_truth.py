@@ -5,7 +5,7 @@ import h5py
 import numpy as np
 
 #----------------------------Arguments---------------------------------------
-dataset_type     = 'test' # Change to train/test
+dataset_type     = 'train' # Change to train/test
 dataset_dir      = './dataset'
 curated_dataset  = os.path.join(dataset_dir, dataset_type + '_cropped')
 curated_textfile = os.path.join(dataset_dir, dataset_type + '.txt')
@@ -96,9 +96,15 @@ def generate_ground_gaussian_attention_mask(sample_top, sample_height, sample_le
     """
     sample_image_height, sample_image_width = img_size
 
-    if sample_top + sample_heigt > sample_image_height:
-        delta_y = (sample_top + sample_heigt) - sample_image_height
+    if sample_height > sample_image_height:
+        sample_height = sample_image_height
+
+    if sample_top + sample_height > sample_image_height:
+        delta_y = (sample_top + sample_height) - sample_image_height
         sample_top = sample_top - delta_y
+
+    if sample_width > sample_image_width:
+        sample_width = sample_image_width
 
     if sample_left + sample_width > sample_image_width:
         delta_x = (sample_left + sample_width) - sample_image_width
@@ -119,7 +125,7 @@ def generate_ground_gaussian_attention_mask(sample_top, sample_height, sample_le
     sample_attention_res = cv2.resize(sample_attention, ground_attention_downsample, interpolation=cv2.INTER_NEAREST)
     sample_attention_res = np.float32(sample_attention_res)
 
-    sample_attention_res_norm = sample_attention_res/np.sum(sample_attention_res) + 1e-5
+    sample_attention_res_norm = sample_attention_res/np.sum(sample_attention_res + 1e-5) + 1e-5
     #print('****************')
 
     return sample_attention, sample_attention_res_norm
@@ -170,8 +176,9 @@ def generate_stop_attention_mask(samples, total_samples):
 
     # Downsample and re-normalize between 0 and 1
     x3 = cv2.resize(x2, ground_attention_downsample, interpolation=cv2.INTER_NEAREST)
-    x3 = np.float32(x3.flatten())
-    x3_1 = x3/np.sum(x3) + 1e-5 # For numerical stability
+    x3 = np.float32(x3)
+
+    x3_1 = x3/np.sum(x3 + 1e-9) + 1e-5 # For numerical stability
 
     return x2, x3_1
 #-------------------------------------------------------------------------------
@@ -206,4 +213,10 @@ for sample_index in range(len(all_data)):
         # Save attention mask
         attn_save_path = os.path.join(ground_attn_dir, all_data[sample_index][0][0][:-4] + '_' + str(k) + '.npy')
         np.save(attn_save_path, attn_mask)
+
+    if sample_index%4000 == 0:
+        print('Completion..{%d/%d}' % (sample_index, len(all_data)))
+
+print('Completion..{%d/%d}' % (len(all_data), len(all_data)))
+print('Completed!')
 #-------------------------------------------------------------------------------
