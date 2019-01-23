@@ -12,7 +12,7 @@ mkdir dataset
 
 3. Select which type to data to curate and run the following command:
 ``` bash
-python crop_dataset --dataset_type='test'
+python crop_dataset --dataset_type=<train/test>
 ```
 
 
