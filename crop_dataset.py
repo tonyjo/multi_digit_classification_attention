@@ -2,23 +2,37 @@ from __future__ import print_function
 import os
 import cv2
 import h5py
+import argparse
 import numpy as np
 from copy import deepcopy
 
+parser = argparse.ArgumentParser()
+parser.add_argument("--dataset_type", type=str, help="where the dataset is stored")
+parser.add_argument("--dataset_dir",  type=str, default="./dataset")
+parser.add_argument("--max_steps",    type=int, default=5, help="max steps")
+parser.add_argument("--img_height",   type=int, default=64, help="image height")
+parser.add_argument("--img_width",    type=int, default=64, help="image width")
+
+args = parser.parse_args()
+print('----------------------------------------')
+print('FLAGS:')
+for arg in vars(args):
+    print("'", arg,"'", ": ", getattr(args, arg))
+print('----------------------------------------')
+
 #----------------------------Arguments---------------------------------------
-dataset_type     = 'test' # Change to train/test
-dataset_dir      = './dataset'
+dataset_type     = args.dataset_type # Change to train/test
+dataset_dir      = args.dataset_dir
 curated_dataset  = os.path.join(dataset_dir, dataset_type + '_cropped')
 curated_textfile = os.path.join(dataset_dir, dataset_type + '.txt')
 file_path        = './dataset/%s/' % (dataset_type)
 mat_file         = './dataset/%s/digitStruct.mat' % (dataset_type)
 expand_percent   = 30
-img_size         = (64, 64) # (width, height)
-max_steps        = 5
+img_size         = (args.img_width, args.img_height) # (width, height)
+max_steps        = args.max_steps
 
 if os.path.exists(curated_dataset) == False:
     os.mkdir(curated_dataset)
-
 
 #---------------------------- Functions ----------------------------------------
 def get_name(index, hdf5_data):
