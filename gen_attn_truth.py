@@ -76,7 +76,7 @@ def gaussian2d(image_height, image_width):
                        np.linspace(-10,10,image_height))
 
     d = np.sqrt(x*x+y*y)
-    sigma, mu = 1.0, 0.0
+    sigma, mu = 5.0, 0.0
     g = np.exp(-((d-mu)**2 / ( 2.0 * sigma**2 )))
 
     return g
@@ -124,7 +124,7 @@ def generate_ground_gaussian_attention_mask(sample_top, sample_height, sample_le
 
     # Downsample and re-normalize between 0 and 1
     sample_attention_res = cv2.resize(sample_attention, ground_attention_downsample, interpolation=cv2.INTER_NEAREST)
-    sample_attention_res_norm = sample_attention_res/np.sum(sample_attention_res + 1e-5) + 1e-5
+    sample_attention_res_norm = sample_attention_res/(np.sum(sample_attention_res) + 1e-5)
     sample_attention_res_norm = sample_attention_res_norm.flatten()
 
     # Sample
@@ -134,9 +134,14 @@ def generate_ground_gaussian_attention_mask(sample_top, sample_height, sample_le
     sample_attention_res_norm_new = np.zeros((ground_attention_downsample)) * 0.0
     sample_attention_res_norm_new = sample_attention_res_norm_new.flatten()
 
-    sample_attention_res_norm_new[max_idx]      = 0.7
-    sample_attention_res_norm_new[sort_idx[-2]] = 0.2
-    sample_attention_res_norm_new[sort_idx[-3]] = 0.1
+    sample_attention_res_norm_new[max_idx] = 0.7
+
+    if sort_idx[-2]] == max_idx:
+        sample_attention_res_norm_new[sort_idx[-3]] = 0.2
+        sample_attention_res_norm_new[sort_idx[-4]] = 0.1
+    else:
+        sample_attention_res_norm_new[sort_idx[-2]] = 0.2
+        sample_attention_res_norm_new[sort_idx[-3]] = 0.1
 
     return sample_attention, sample_attention_res_norm_new
 
