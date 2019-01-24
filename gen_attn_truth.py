@@ -5,7 +5,7 @@ import h5py
 import numpy as np
 
 #----------------------------Arguments---------------------------------------
-dataset_type     = 'test' # Change to train/test
+dataset_type     = 'train' # Change to train/test
 dataset_dir      = './dataset'
 curated_dataset  = os.path.join(dataset_dir, dataset_type + '_cropped')
 curated_textfile = os.path.join(dataset_dir, dataset_type + '.txt')
@@ -136,7 +136,7 @@ def generate_ground_gaussian_attention_mask(sample_top, sample_height, sample_le
 
     sample_attention_res_norm_new[max_idx] = 0.7
 
-    if sort_idx[-2]] == max_idx:
+    if sort_idx[-2] == max_idx:
         sample_attention_res_norm_new[sort_idx[-3]] = 0.3
     else:
         sample_attention_res_norm_new[sort_idx[-2]] = 0.2

@@ -46,9 +46,7 @@ class dataLoader(object):
                         each_data.append(str(iterm_data[count]) + '.png')
                     else:
                         each_data.append(iterm_data[count])
-
                     count += 1
-
                 final_data.append(each_data)
 
             all_data.append(final_data)

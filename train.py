@@ -47,9 +47,15 @@ class Train(object):
         # Build model with loss
         loss = self.model.build_model()
 
+        # Global step
+        global_step = tf.Variable(0, dtype=tf.int32, trainable=False)
+
         # Train op
         with tf.name_scope('optimizer'):
-            optimizer = self.optimizer(learning_rate=self.learning_rate)
+            decay_l_rate = tf.train.exponential_decay(self.learning_rate, global_step,\
+                                                       50000, 0.9, staircase=True)
+            incr_glbl_stp = tf.assign(global_step, global_step+1)
+            optimizer = self.optimizer(learning_rate=decay_l_rate)
             grads = tf.gradients(loss, tf.trainable_variables())
             grads_and_vars = list(zip(grads, tf.trainable_variables()))
             train_op = optimizer.apply_gradients(grads_and_vars=grads_and_vars)
@@ -90,7 +96,7 @@ class Train(object):
                                  self.model.gnd_attn: grd_attn_batch,
                                  self.model.drop_prob: 0.5}
 
-                    _, l = sess.run([train_op, loss], feed_dict)
+                    _, l, _ = sess.run([train_op, loss, incr_glbl_stp], feed_dict)
                     curr_loss += l
 
                     if i%self.print_every == 0:
@@ -116,14 +122,14 @@ class Train(object):
 def main():
     # Load train dataset
     data = dataLoader(directory='./dataset', dataset_dir='train_cropped',
-                      dataset_name='train.txt', max_steps=5, mode='Train')
+                      dataset_name='train.txt', max_steps=7, mode='Train')
     # Load Model
-    model = Model(dim_feature=[49, 128], dim_hidden=128, n_time_step=5,
+    model = Model(dim_feature=[49, 128], dim_hidden=128, n_time_step=7,
                   alpha_c=5.0, image_height=64, image_width=64, mode='train')
     # Load Trainer
-    trainer = Train(model, data, val_data=None, n_epochs=100, batch_size=64,
-                    update_rule='adam', learning_rate=0.00001, print_every=100, save_every=1,
-                    pretrained_model='./model/lstm2/model-40', model_path='model/lstm2/', log_path='log2/')
+    trainer = Train(model, data, val_data=None, n_epochs=1000, batch_size=64,
+                    update_rule='adam', learning_rate=0.0001, print_every=100, save_every=1,
+                    pretrained_model=None, model_path='model/lstm1/', log_path='log1/')
     # Begin Training
     trainer.train()
 #-------------------------------------------------------------------------------
