@@ -9,7 +9,7 @@ from copy import deepcopy
 parser = argparse.ArgumentParser()
 parser.add_argument("--dataset_type", type=str, help="train/test")
 parser.add_argument("--dataset_dir",  type=str, default="./dataset")
-parser.add_argument("--max_steps",    type=int, default=5, help="max steps")
+parser.add_argument("--max_steps",    type=int, default=7, help="max steps")
 parser.add_argument("--img_height",   type=int, default=64, help="image height")
 parser.add_argument("--img_width",    type=int, default=64, help="image width")
 
@@ -46,7 +46,12 @@ def get_bbox(index, hdf5_data):
         attr = hdf5_data[item][key]
         values = [hdf5_data[attr.value[i].item()].value[0][0]
                   for i in range(len(attr))] if len(attr) > 1 else [attr.value[0][0]]
-        all_iterm_data.append(values)
+        # Matlab to python --indexing correction
+        if key == 'left'or key == 'top':
+            values_idx_corr = [val-1 for val in values]
+            all_iterm_data.append(values_idx_corr)
+        else:
+            all_iterm_data.append(values)
 
     return all_iterm_data
 
@@ -97,8 +102,8 @@ f = h5py.File(mat_file,'r')
 print('Total bboxes: ', f['/digitStruct/name'].shape[0])
 
 all_data = []
-for j in range(f['/digitStruct/bbox'].shape[0]):
-#for j in range(1000):
+#for j in range(f['/digitStruct/bbox'].shape[0]):
+for j in range(1000):
     img_name = get_name(j, f)
     row_dict = get_bbox(j, f)
 
@@ -133,6 +138,7 @@ all_data_copy = deepcopy(all_data)
 
 with open(curated_textfile, 'w') as ft:
     for sample_index in range(len(all_data)):
+    #for sample_index in range(1000):
         try:
             sample_imgph = all_data[sample_index][0]
             sample_image = cv2.imread(file_path+sample_imgph)
@@ -200,19 +206,24 @@ with open(curated_textfile, 'w') as ft:
             # Collect samples
             samples = []
             for index_into in range(max_steps):
-                if index_into > total_samples - 1:
+                if index_into == 0:
                     sample_label = 0
+                    sample_left  = 1
+                    sample_top   = 1
+                    sample_width = 1
+                    sample_heigt = 1
+                elif index_into > total_samples:
+                    sample_label = 11
                     sample_left  = 0
                     sample_top   = 0
                     sample_width = 0
                     sample_heigt = 0
-
                 else:
-                    sample_label = int(all_data_copy[sample_index][1][0][index_into])
-                    sample_left  = abs(int((all_data_copy[sample_index][1][1][index_into] * img_size[0])/sample_width_org_rz))
-                    sample_top   = abs(int((all_data_copy[sample_index][1][2][index_into] * img_size[1])/sample_heigt_org_rz))
-                    sample_width = abs(int((all_data_copy[sample_index][1][3][index_into] * img_size[0])/sample_width_org_rz))
-                    sample_heigt = abs(int((all_data_copy[sample_index][1][4][index_into] * img_size[1])/sample_heigt_org_rz))
+                    sample_label = int(all_data_copy[sample_index][1][0][index_into-1])
+                    sample_left  = abs(int((all_data_copy[sample_index][1][1][index_into-1] * img_size[0])/sample_width_org_rz))
+                    sample_top   = abs(int((all_data_copy[sample_index][1][2][index_into-1] * img_size[1])/sample_heigt_org_rz))
+                    sample_width = abs(int((all_data_copy[sample_index][1][3][index_into-1] * img_size[0])/sample_width_org_rz))
+                    sample_heigt = abs(int((all_data_copy[sample_index][1][4][index_into-1] * img_size[1])/sample_heigt_org_rz))
 
                 # Append
                 samples.append([all_data_copy[sample_index][0][:-4], sample_label, sample_left, sample_top, sample_width, sample_heigt])
