@@ -89,6 +89,8 @@ class dataLoader(object):
                 sample_data = next(data_gen)
                 sample_img_path = os.path.join(self.directory, self.dataset_dir, sample_data[0][0])
                 image = cv2.imread(sample_img_path)
+                # Set image between -1 and 1
+                image = image /127.5 - 1.0
                 # Gather sample data for all time steps
                 all_sample_data = []
                 all_sample_attn = []

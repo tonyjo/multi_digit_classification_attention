@@ -5,7 +5,7 @@ import h5py
 import numpy as np
 
 #----------------------------Arguments---------------------------------------
-dataset_type     = 'train' # Change to train/test
+dataset_type     = 'test' # Change to train/test
 dataset_dir      = './dataset'
 curated_dataset  = os.path.join(dataset_dir, dataset_type + '_cropped')
 curated_textfile = os.path.join(dataset_dir, dataset_type + '.txt')
@@ -183,8 +183,11 @@ def generate_start_attention_mask_v1():
     x = x / (sample_image_height*sample_image_width)
 
     # Downsample and re-normalize between 0 and 1
-    x1 = np.ones(ground_attention_downsample) * 1.0
-    x1 = x1 / (ground_attention_downsample[0] * ground_attention_downsample[1])
+    x1 = np.zeros(ground_attention_downsample) * 0.0
+    x1[0, 0] = 0.25
+    x1[0, 6] = 0.25
+    x1[6, 0] = 0.25
+    x1[6, 6] = 0.25
 
     return x, x1
 

@@ -110,7 +110,7 @@ class Model(object):
             for T in range(self.T):
                 pred_alpha = alpha_list[T] # (N, L)
                 grnd_alpha = self.gnd_attn[:, T, :] # (N, L)
-                eror_alpha =  grnd_alpha * tf.log(grnd_alpha/(pred_alpha + 0.000001))  # Avoid NaN
+                eror_alpha =  grnd_alpha * tf.log(grnd_alpha/(pred_alpha + 0.0001) + 1e-8)  # Avoid NaN
                 alpha_loss += tf.reduce_sum(eror_alpha) # (1)
 
             # Weight alpha loss

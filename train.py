@@ -90,7 +90,6 @@ class Train(object):
                 start_t   = time.time()
                 for i in range(n_iters_per_epoch):
                     image_batch, grd_bboxes_batch, grd_attn_batch = next(train_loader)
-
                     feed_dict = {self.model.images: image_batch,
                                  self.model.bboxes: grd_bboxes_batch,
                                  self.model.gnd_attn: grd_attn_batch,
@@ -125,7 +124,7 @@ def main():
                       dataset_name='train.txt', max_steps=7, mode='Train')
     # Load Model
     model = Model(dim_feature=[49, 128], dim_hidden=128, n_time_step=7,
-                  alpha_c=5.0, image_height=64, image_width=64, mode='train')
+                  alpha_c=1.0, image_height=64, image_width=64, mode='train')
     # Load Trainer
     trainer = Train(model, data, val_data=None, n_epochs=1000, batch_size=64,
                     update_rule='adam', learning_rate=0.0001, print_every=100, save_every=1,
