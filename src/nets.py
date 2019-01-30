@@ -104,11 +104,11 @@ def classification_network(images, dropout, mode='train'):
         layer_6 = tf.nn.dropout(layer_6, keep_prob=dropout)
         layer_7 = tf.contrib.layers.fully_connected(layer_6, 128,
                                                     activation_fn=None)
-        layer_8 = _batch_norm(layer_7, mode=mode, name='layer_9')
-        layer_8 = tf.nn.leaky_relu(layer_8, name='relu_layer_9')
-        layer_8 = tf.nn.dropout(layer_8, keep_prob=dropout)
+        layer_7 = _batch_norm(layer_7, mode=mode, name='layer_9')
+        layer_7 = tf.nn.leaky_relu(layer_7, name='relu_layer_9')
+        layer_7 = tf.nn.dropout(layer_7, keep_prob=dropout)
         # Classification layer
-        layer_9 = tf.contrib.layers.fully_connected(layer_8, 10,
+        layer_8 = tf.contrib.layers.fully_connected(layer_7, 10,
                                                     activation_fn=None)
 
-    return layer_9
+    return layer_8
