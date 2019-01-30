@@ -128,8 +128,8 @@ class dataLoader(object):
                 sample_height = abs(int(sample_data[idx][4]))
 
                 image_patch = image[sample_top:sample_top+sample_height, sample_left:sample_left+sample_width, :]
-                # Shrinking
-                image_patch_rz = cv2.resize(image_patch, (self.width, self.height), interpolation = cv2.INTER_AREA)
+                # Zooming
+                image_patch_rz = cv2.resize(image_patch, (self.width, self.height), interpolation = cv2.INTER_LINEAR)
                 # Append to generated batch
                 image_batch.append(image_patch_rz)
                 label_batch.append(one_hot_label)
