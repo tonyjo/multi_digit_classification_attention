@@ -111,25 +111,26 @@ class dataLoader(object):
                 sample_data = next(data_gen)
                 sample_img_path = os.path.join(self.directory, self.dataset_dir, sample_data[0])
                 image = cv2.imread(sample_img_path)
-                # Set image between -1 and 1
-                image = image /127.5 - 1.0
                 # Gather sample data for all time steps
                 # Extract ground boxes-- sample_left, sample_top, sample_width, sample_height
-                sample_label  = abs(int(sample_data[idx][0])) * 1.0
+                sample_label  = abs(int(sample_data[1])) * 1.0
+                #print(sample_label)
                 one_hot_label = np.zeros(10) * 0.0
                 if sample_label == 10:
                     one_hot_label[0] = 1.0
                 else:
-                    one_hot_label[sample_label] = 1.0
+                    one_hot_label[int(sample_label)] = 1.0
 
-                sample_left   = abs(int(sample_data[idx][1]))
-                sample_top    = abs(int(sample_data[idx][2]))
-                sample_width  = abs(int(sample_data[idx][3]))
-                sample_height = abs(int(sample_data[idx][4]))
+                sample_left   = abs(int(sample_data[2]))
+                sample_top    = abs(int(sample_data[3]))
+                sample_width  = abs(int(sample_data[4]))
+                sample_height = abs(int(sample_data[5]))
 
                 image_patch = image[sample_top:sample_top+sample_height, sample_left:sample_left+sample_width, :]
                 # Zooming
-                image_patch_rz = cv2.resize(image_patch, (self.width, self.height), interpolation = cv2.INTER_LINEAR)
+                image_patch_rz = cv2.resize(image_patch, (self.width, self.height), interpolation = cv2.INTER_AREA)
+                # Set image between -1 and 1
+                image_patch_rz = image_patch_rz /127.5 - 1.0
                 # Append to generated batch
                 image_batch.append(image_patch_rz)
                 label_batch.append(one_hot_label)
