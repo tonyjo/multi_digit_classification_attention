@@ -127,7 +127,7 @@ def main():
 
     # Load Trainer
     trainer = Train(model, data, val_data=None, n_epochs=1000, batch_size=64,
-                    update_rule='adam', learning_rate=0.0001, print_every=100, save_every=1,
+                    update_rule='adam', learning_rate=0.0001, print_every=500, save_every=1,
                     pretrained_model=None, model_path='model/clsfy1/', log_path='log_clsfy1/')
     # Begin Training
     trainer.train()
