@@ -36,6 +36,10 @@ class Model(object):
 
     def build_test_model(self):
         logits = classification_network(self.images, dropout=self.drop_prob, mode=self.mode)
+        logits_norm = tf.nn.softmax(logits=logits)
+
         print('Classification build model sucess!')
 
-        return logits
+        prediction = tf.argmax(imput=logits_norm, axis=1, name='argmax', output_type=tf.int32)
+
+        return logits_norm, prediction
