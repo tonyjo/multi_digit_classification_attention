@@ -40,6 +40,6 @@ class Model(object):
 
         print('Classification build model sucess!')
 
-        prediction = tf.argmax(imput=logits_norm, axis=1, name='argmax', output_type=tf.int32)
+        prediction = tf.argmax(input=logits_norm, axis=1, name='pred_argmax')
 
         return logits_norm, prediction
