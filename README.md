@@ -1,4 +1,4 @@
-# Multi-digit detection and classification via attention
+# Multi-digit detection  via attention and classification
 
 ### Preparing training and testing data
 First we need to generate the valid pixel locations.
