@@ -6,7 +6,7 @@ import time
 import numpy as np
 import tensorflow as tf
 from src.baseline_classify import Model
-from src.data_loader_classify import dataLoader
+from src.data_loader_pred_classify import dataLoader
 
 class Test(object):
     def __init__(self, data, attn_model, clfy_model, **kwargs):
@@ -40,6 +40,7 @@ class Test(object):
         for t in range(len(pred_bboxs)):
             interm_pred_bboxs = []
             for T in range(self.max_steps):
+                # Ignore first and last prediction
                 if T != 0 and T+1 != self.max_steps:
                     # Predicted bounding box
                     smple_left   = pred_bboxes[t][T][0][0]
@@ -62,7 +63,8 @@ class Test(object):
         for t in range(len(bboxes)):
             image = images[t]
             bbox  = bboxes[t]
-
+            interm_images_crop_resize = []
+            # Loop through predictions
             for bbx in bbox:
                 sample_left   = abs(int(bbx[0]))
                 sample_top    = abs(int(bbx[1]))
@@ -72,10 +74,12 @@ class Test(object):
                 image_patch = image[sample_top:sample_top+sample_height, sample_left:sample_left+sample_width, :]
                 # Zooming
                 image_patch_rz = cv2.resize(image_patch, (self.width, self.height), interpolation = cv2.INTER_AREA)
-                # Set image between -1 and 1
+                # Normalize image between -1 and 1
                 image_patch_rz = image_patch_rz /127.5 - 1.0
-
-                images_crop_resize.append(image_patch_rz)
+                # Collect
+                interm_images_crop_resize.append(image_patch_rz)
+            # Append to main
+            images_crop_resize.append(interm_images_crop_resize)
 
         return images_crop_resize
 
@@ -84,7 +88,8 @@ class Test(object):
         test_loader = self.data.gen_data_batch(self.batch_size)
         n_examples  = self.data.max_length
         n_iters     = int(np.ceil(float(n_examples)/self.batch_size))
-
+        # Total Char
+        total_char = 0.0
         # Summary
         print("Data size:  %d" %n_examples)
         print("Batch size: %d" %self.batch_size)
@@ -123,28 +128,29 @@ class Test(object):
 
             for i in range(n_iters):
                 image_batch, image_norm_batch, label_batch = next(test_loader)
-
                 ## Box Prediction
                 feed_dict = {self.attn_model.images: image_norm_batch,
                              self.attn_model.drop_prob: 1.0}
                 # Run bounding box prediction
                 predicted_bboxs = sess.run(pred_bboxs_, feed_dict)
                 vald_prdct_bbxs = self.valid_pred_bboxs(pred_bboxs=predicted_bboxs)
-                images_crop_rez = self.crop_and_resize(images=, bboxes=vald_prdct_bbxs)
+                images_crop_rez = self.crop_and_resize(images=image_batch, bboxes=vald_prdct_bbxs)
                 images_crop_rez = np.array(images_crop_rez)
-
                 ## Digit classification
-                # Check if prediction batch == label_batch,
-                # if not select upto of the label batch
-                if len(images_crop_rez) != len(label_batch):
-                    images_crop_rez = images_crop_rez[0:len(label_batch), :, :, :]
-
-                feed_dict = {self.clfy_model.images: images_crop_rez,
-                             self.clfy_model.labels: label_batch,
-                             self.clfy_model.drop_prob: 1.0}
-
-                accu, pred = sess.run([accuracy, predictions], feed_dict)
-                total_acc += accu
+                for k in range(len(images_crop_rez)):
+                    each_predt_images = images_crop_rez[k]
+                    each_image_labels = label_batch[k]
+                    # Check if prediction batch equals label_batch,
+                    # if not select upto of the label batch
+                    if len(each_predt_images) != len(each_image_labels):
+                        each_predt_images = each_predt_images[0:len(each_image_labels), :, :, :]
+                    ## Digit Prediction
+                    feed_dict = {self.clfy_model.images: each_predt_images,
+                                 self.clfy_model.labels: each_image_labels,
+                                 self.clfy_model.drop_prob: 1.0}
+                    # Run bounding
+                    accu, pred = sess.run([accuracy, predictions], feed_dict)
+                    total_acc += accu
 
                 if i%self.print_every == 0:
                     print('Completion..{%d/%d}' % (i, n_iters))
