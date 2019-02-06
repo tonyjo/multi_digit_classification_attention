@@ -79,7 +79,6 @@ def main():
                       max_steps=7, mode='Test')
     # Load Model
     model = Model(image_height=16, image_width=16, l2=0.0002, mode='test')
-
     # Load Inference model
     testing = Test(model, data, batch_size=16, print_every=200,
                    pretrained_model='./model/clsfy1/model-640')
