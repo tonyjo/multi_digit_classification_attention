@@ -149,10 +149,10 @@ class Test(object):
                         each_predt_images = each_predt_images[0:len(each_image_labels), :, :, :]
                     elif len(each_predt_images) < len(each_image_labels):
                         each_predt_images_trim = each_predt_images[0:len(each_predt_images), :, :, :]
-                    # Increment total characters
-                    total_char += len()
+                    # Increment total characters using the orginal sequence not the trim
+                    total_char += len(each_image_labels)
                     ## Digit Prediction
-                    feed_dict = {self.clfy_model.images: each_predt_images,
+                    feed_dict = {self.clfy_model.images: each_predt_images_trim,
                                  self.clfy_model.labels: each_image_labels,
                                  self.clfy_model.drop_prob: 1.0}
                     # Run bounding
@@ -164,7 +164,7 @@ class Test(object):
         print('Epoch Completion..{%d/%d}' % (n_iters, n_iters))
         print('Completed!')
 
-        print('Final per-character accuracy is: %f' % (total_acc/n_iters))
+        print('Final per-character accuracy is: %f' % (total_acc/total_char))
 #-------------------------------------------------------------------------------
 def main():
     # Load train dataset
