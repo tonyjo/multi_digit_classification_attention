@@ -5,12 +5,15 @@ os.environ["CUDA_VISIBLE_DEVICES"]="0"
 import time
 import numpy as np
 import tensorflow as tf
-from src.baseline_classify import Model
+from src.model import Model as Attn_Model
+from src.baseline_classify import Model as Clfy_Model
 from src.data_loader_pred_classify import dataLoader
 
 class Test(object):
-    def __init__(self, data, attn_model, clfy_model, **kwargs):
+    def __init__(self, data, attn_model, clfy_model, img_size, **kwargs):
         self.data        = data
+        self.width       = img_size[0]
+        self.height      = img_size[1]
         self.attn_model  = attn_model
         self.clfy_model  = clfy_model
         self.max_steps   = kwargs.pop('max_steps', 7)
@@ -138,12 +141,16 @@ class Test(object):
                 images_crop_rez = np.array(images_crop_rez)
                 ## Digit classification
                 for k in range(len(images_crop_rez)):
-                    each_predt_images = images_crop_rez[k]
+                    each_predt_images = np.array(images_crop_rez[k])
                     each_image_labels = label_batch[k]
                     # Check if prediction batch equals label_batch,
                     # if not select upto of the label batch
-                    if len(each_predt_images) != len(each_image_labels):
+                    if len(each_predt_images) > len(each_image_labels):
                         each_predt_images = each_predt_images[0:len(each_image_labels), :, :, :]
+                    elif len(each_predt_images) < len(each_image_labels):
+                        each_predt_images_trim = each_predt_images[0:len(each_predt_images), :, :, :]
+                    # Increment total characters
+                    total_char += len()
                     ## Digit Prediction
                     feed_dict = {self.clfy_model.images: each_predt_images,
                                  self.clfy_model.labels: each_image_labels,
@@ -160,7 +167,20 @@ class Test(object):
         print('Final per-character accuracy is: %f' % (total_acc/n_iters))
 #-------------------------------------------------------------------------------
 def main():
-    pass
+    # Load train dataset
+    data = dataLoader(directory='./dataset', dataset_dir='test_curated',
+                      dataset_name='test.txt', max_steps=7, mode='Test')
+    # Load Attention Model
+    attn_model = Attn_Model(dim_feature=[49, 128], dim_hidden=128, n_time_step=7,
+                  alpha_c=1.0, image_height=64, image_width=64, mode='test')
+    # Load
+    clfy_model = Clfy_Model(image_height=16, image_width=16, l2=0.0002, mode='test')
+    # Load Inference model
+    testing = Test(data, attn_model, clfy_model, batch_size=16, img_size=(),\
+                   print_every=2000, pretrained_clfy_model='model/lstm1/model-50',\
+                   pretrained_attn_model='model/lstm1/model-50')
+    # Begin Evaluation
+    testing.test()
 #-------------------------------------------------------------------------------
 if __name__ == "__main__":
     main()
