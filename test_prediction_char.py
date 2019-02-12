@@ -64,8 +64,8 @@ class Test(object):
     def crop_and_resize(self, images, bboxes):
         images_crop_resize = []
         for t in range(len(bboxes)):
-            image = images[t]
-            bbox  = bboxes[t]
+            image = images[t] # Sample image
+            bbox  = bboxes[t] # Sample predictions
             interm_images_crop_resize = []
             # Loop through predictions
             for bbx in bbox:
@@ -87,7 +87,7 @@ class Test(object):
         return images_crop_resize
 
     def test(self):
-        # Train dataset
+        # Test dataset
         test_loader = self.data.gen_data_batch(self.batch_size)
         n_examples  = self.data.max_length
         n_iters     = int(np.ceil(float(n_examples)/self.batch_size))
@@ -168,7 +168,7 @@ class Test(object):
 #-------------------------------------------------------------------------------
 def main():
     # Load train dataset
-    data = dataLoader(directory='./dataset', dataset_dir='test_curated',
+    data = dataLoader(directory='./dataset', dataset_dir='test_curated',\
                       dataset_name='test.txt', max_steps=7, mode='Test')
     # Load Attention Model
     attn_model = Attn_Model(dim_feature=[49, 128], dim_hidden=128, n_time_step=7,
@@ -176,11 +176,25 @@ def main():
     # Load
     clfy_model = Clfy_Model(image_height=16, image_width=16, l2=0.0002, mode='test')
     # Load Inference model
-    testing = Test(data, attn_model, clfy_model, batch_size=16, img_size=(),\
-                   print_every=2000, pretrained_clfy_model='model/lstm1/model-50',\
-                   pretrained_attn_model='model/lstm1/model-50')
+    # testing = Test(data, attn_model, clfy_model, batch_size=16, img_size=(),\
+    #                print_every=2000, pretrained_clfy_model='model/lstm1/model-2000',\
+    #                pretrained_attn_model='model/lstm1/model-640')
+    testing = Test(data, attn_model, clfy_model, img_size=(16,16), batch_size=16,\
+                   print_every=2000, pretrained_clfy_model=None, pretrained_attn_model=None)
     # Begin Evaluation
     testing.test()
 #-------------------------------------------------------------------------------
 if __name__ == "__main__":
     main()
+
+# data, attn_model, clfy_model, img_size, **kwargs
+#         self.data        = data
+#         self.width       = img_size[0]
+#         self.height      = img_size[1]
+#         self.attn_model  = attn_model
+#         self.clfy_model  = clfy_model
+#         self.max_steps   = kwargs.pop('max_steps', 7)
+#         self.batch_size  = kwargs.pop('batch_size', 16)
+#         self.print_every = kwargs.pop('print_every', 100)
+#         self.pretrained_clfy_model = kwargs.pop('pretrained_clfy_model', None)
+#         self.pretrained_attn_model = kwargs.pop('pretrained_attn_model', None)

@@ -6,10 +6,8 @@ import numpy as np
 from copy import deepcopy
 
 class dataLoader(object):
-    def __init__(self, directory, dataset_dir, height, width, dataset_name, max_steps, mode='Train'):
+    def __init__(self, directory, dataset_dir, dataset_name, max_steps, mode='Train'):
         self.mode         = mode
-        self.height       = height
-        self.width        = width
         self.max_steps    = max_steps
         self.directory    = directory
         self.dataset_dir  = dataset_dir
@@ -34,7 +32,7 @@ class dataLoader(object):
                 elif sample_left == 1 and sample_top == 1 and sample_width == 1 and sample_heigt == 1:
                     continue
                 else:
-                    iterm_data.append([sample_path, sample_label, sample_left, sample_top, sample_width, sample_heigt])
+                    interm_data.append([sample_path, sample_label, sample_left, sample_top, sample_width, sample_heigt])
 
             all_data.append(interm_data)
 
@@ -77,9 +75,12 @@ class dataLoader(object):
 
             all_data.append(final_data)
 
-        all_data_final  = self.convert_allseq2actualseq(data=all_data)
-        self.all_data   = all_data_final
-        self.max_length = len(self.all_data)
+        all_seq_data      = self.convert_allseq2actualseq(data=all_data)
+        #self.all_data    = all_data
+        self.all_data     = all_seq_data
+        self.max_length   = len(self.all_data)
+
+        print('All data-loaded!')
 
     def gen_random_data(self):
         while True:
@@ -98,7 +99,7 @@ class dataLoader(object):
 
                 yield data
 
-    def gen_data_batch(self, batch_size):`
+    def gen_data_batch(self, batch_size):
         # Generate data based on training/validation
         if self.mode == 'Train':
             # Randomize data
@@ -115,13 +116,14 @@ class dataLoader(object):
             for _ in range(batch_size):
                 sample_data = next(data_gen)
                 sample_img_path = os.path.join(self.directory, self.dataset_dir, sample_data[0][0])
+                #print(sample_img_path)
                 image = cv2.imread(sample_img_path)
                 image_norm = deepcopy(image)
                 # Gather sample data for all time steps
                 # Extract ground boxes-- sample_left, sample_top, sample_width, sample_height
-                all_sample_data  = []
+                #all_sample_data  = []
                 all_sample_label = []
-                for idx in range(self.max_steps):
+                for idx in range(len(sample_data)):
                     sample_label = abs(int(sample_data[idx][1])) * 1.0
                     # print(sample_label)
                     one_hot_label = np.zeros(10) * 0.0
@@ -129,13 +131,13 @@ class dataLoader(object):
                         one_hot_label[0] = 1.0
                     else:
                         one_hot_label[int(sample_label)] = 1.0
-                    # Bboxes coordinates
-                    sample_left   = abs(int(sample_data[idx][2]))
-                    sample_top    = abs(int(sample_data[idx][3]))
-                    sample_width  = abs(int(sample_data[idx][4]))
-                    sample_height = abs(int(sample_data[idx][5]))
+                    # # Bboxes coordinates
+                    # sample_left   = abs(int(sample_data[idx][2]))
+                    # sample_top    = abs(int(sample_data[idx][3]))
+                    # sample_width  = abs(int(sample_data[idx][4]))
+                    # sample_height = abs(int(sample_data[idx][5]))
                     # Append
-                    all_sample_data.append([sample_left, sample_top, sample_width, sample_height])
+                    #all_sample_data.append([sample_left, sample_top, sample_width, sample_height])
                     all_sample_label.append(one_hot_label)
                 # Set image between -1 and 1
                 image_norm = image_norm / 127.5 - 1.0
@@ -144,6 +146,6 @@ class dataLoader(object):
                 label_batch.append(all_sample_label)
                 image_norm_batch.append(image_norm)
                 # Free Variables
-                del image_norm, image, all_sample_data
+                del image_norm, image
 
             yield np.array(image_batch), np.array(image_norm_batch), np.array(label_batch)
