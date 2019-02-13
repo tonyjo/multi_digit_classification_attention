@@ -190,8 +190,8 @@ class Test(object):
 
         #----------------------Compute Sequence Accuracy------------------------
         total_acc = 0.0
-        for t in range(len(label_batch)):
-            each_lbl_batch = label_batch[t]
+        for t in range(len(labl_batchs)):
+            each_lbl_batch = labl_batchs[t]
             each_prd_batch = all_predictions[t]
             for T in range(len(each_lbl_batch)):
                 try :

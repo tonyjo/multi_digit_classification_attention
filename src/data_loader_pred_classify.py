@@ -126,11 +126,7 @@ class dataLoader(object):
                 for idx in range(len(sample_data)):
                     sample_label = abs(int(sample_data[idx][1])) * 1.0
                     # print(sample_label)
-                    one_hot_label = np.zeros(10) * 0.0
                     if sample_label == 10:
-                        one_hot_label[0] = 1.0
-                    else:
-                        one_hot_label[int(sample_label)] = 1.0
                     # # Bboxes coordinates
                     # sample_left   = abs(int(sample_data[idx][2]))
                     # sample_top    = abs(int(sample_data[idx][3]))
@@ -138,7 +134,7 @@ class dataLoader(object):
                     # sample_height = abs(int(sample_data[idx][5]))
                     # Append
                     #all_sample_data.append([sample_left, sample_top, sample_width, sample_height])
-                    all_sample_label.append(one_hot_label)
+                    all_sample_label.append(sample_label)
                 # Set image between -1 and 1
                 image_norm = image_norm / 127.5 - 1.0
                 # Append to generated batch
