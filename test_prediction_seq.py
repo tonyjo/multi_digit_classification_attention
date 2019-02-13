@@ -163,9 +163,11 @@ class Test(object):
                 saver.restore(sess, pretrained_clfy_model)
             else:
                 print("Start testing with Classification Model with random weights...")
-            # Total length of sequence
+            # Run predictions
             empty=[]
-            all_predictions=[]
+            lbl_batchs = []
+            all_prdcts = []
+            for i in range(n_iters):
             for i in range(len(images_crop_rez)):
                 input_seq = np.array(images_crop_rez[i])
                 try:
