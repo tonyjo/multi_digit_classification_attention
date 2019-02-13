@@ -190,12 +190,13 @@ class Test(object):
 
         #----------------------Compute Sequence Accuracy------------------------
         total_acc = 0.0
+        total_seq = 0.0
         for t in range(len(labl_batchs)):
             each_lbl_batch = labl_batchs[t]
             each_prd_batch = all_predictions[t]
             for T in range(len(each_lbl_batch)):
+                each_labl_seq = each_lbl_batch[T]
                 try :
-                    each_labl_seq = each_lbl_batch[T]
                     each_pred_seq = each_prd_batch[T]
                     seq_accuracy  = 0
                     for tT in range(len(each_labl_seq)):
@@ -209,6 +210,8 @@ class Test(object):
                             print('Index Error Occured at: ', t, T, tT)
                         # Get the accuracy of sequence
                         seq_accuracy = seq_accuracy/len(each_labl_seq)
+                        # Update sequence
+                        total_seq += 1
                         # Update
                         total_acc += seq_accuracy
                 except IndexError:
