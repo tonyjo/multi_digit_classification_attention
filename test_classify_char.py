@@ -16,13 +16,11 @@ class Test(object):
         self.print_every      = kwargs.pop('print_every', 100)
         self.pretrained_model = kwargs.pop('pretrained_model', None)
 
-
     def test(self):
         # Train dataset
         test_loader = self.data.gen_data_batch(self.batch_size)
-
-        n_examples = self.data.max_length
-        n_iters    = int(np.ceil(float(n_examples)/self.batch_size))
+        n_examples  = self.data.max_length
+        n_iters     = int(np.ceil(float(n_examples)/self.batch_size))
 
         # Summary
         print("Data size:  %d" %n_examples)

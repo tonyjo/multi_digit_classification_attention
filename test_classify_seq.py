@@ -19,9 +19,8 @@ class Test(object):
     def test(self):
         # Train dataset
         test_loader = self.data.gen_data_batch(self.batch_size)
-
-        n_examples = self.data.max_length
-        n_iters    = int(np.ceil(float(n_examples)/self.batch_size))
+        n_examples  = self.data.max_length
+        n_iters     = int(np.ceil(float(n_examples)/self.batch_size))
 
         # Summary
         print("Data size:  %d" %n_examples)
@@ -29,38 +28,35 @@ class Test(object):
         print("Iterations: %d" %n_iters)
 
         # Build model
-        _, predictions    = self.model.build_test_model()
+        _, predictions  = self.model.build_test_model()
 
         #------------------------Digit-Classification---------------------------
-        # Reset graph
-        tf.reset_default_graph()
         # Set GPU options
         config = tf.GPUOptions(allow_growth=True)
 
         with tf.Session(config=tf.ConfigProto(gpu_options=config)) as sess:
             # Intialize the training graph
-            init = tf.group(tf.global_variables_initializer(), tf.local_variables_initializer())
-            sess.run(init)
+            sess.run(tf.global_variables_initializer())
             # Tensorboard summary path
             saver = tf.train.Saver()
-
+            # Load pretrained model
             if self.pretrained_model is not None:
                 print("Start testing with pretrained Model..")
                 saver.restore(sess, self.pretrained_model)
             else:
                 print("Start testing with Model with random weights...")
-
+            # Run predictions
             lbl_batchs = []
             all_prdcts = []
             for i in range(n_iters):
                 _, _, img_seq_batch, label_batch = next(test_loader)
                 each_lbl = []
                 each_prd = []
-                for k in range(batch_size):
+                for k in range(self.batch_size):
                     each_img_seq = img_seq_batch[k]
                     each_img_lbl = label_batch[k]
                     # Convert one-hot to label
-                    feed_dict = {self.model.images: np.array(each_img_seq)
+                    feed_dict = {self.model.images: np.array(each_img_seq),
                                  self.model.drop_prob: 1.0}
                     # Predictions
                     pred = sess.run(predictions, feed_dict)
@@ -78,6 +74,7 @@ class Test(object):
 
         #----------------------Compute Sequence Accuracy------------------------
         total_acc = 0.0
+        total_seq = 0.0
         for t in range(len(lbl_batchs)):
             each_lbl_batch = lbl_batchs[t]
             each_prd_batch = all_prdcts[t]
@@ -88,16 +85,15 @@ class Test(object):
                 for tT in range(len(each_labl_seq)):
                     each_labl = each_labl_seq[tT]
                     each_pred = each_pred_seq[tT]
-                    print(each_labl)
-                    print(each_pred)
                     if each_labl == each_pred:
                         seq_accuracy += 1
                 # Get the accuracy of sequence
                 seq_accuracy = seq_accuracy/len(each_labl_seq)
+                # Update sequence
+                total_seq += 1
                 # Update
                 total_acc += seq_accuracy
-                break
-        print('Final Sequence accuracy is: %f' % (total_acc/n_examples))
+        print('Final Sequence accuracy is: %f' % (total_acc/total_seq))
 #-------------------------------------------------------------------------------
 def main():
     # Load train dataset
