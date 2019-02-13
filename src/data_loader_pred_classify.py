@@ -127,13 +127,14 @@ class dataLoader(object):
                     sample_label = abs(int(sample_data[idx][1])) * 1.0
                     # print(sample_label)
                     if sample_label == 10:
+                        sample_label = 0.0
                     # # Bboxes coordinates
                     # sample_left   = abs(int(sample_data[idx][2]))
                     # sample_top    = abs(int(sample_data[idx][3]))
                     # sample_width  = abs(int(sample_data[idx][4]))
                     # sample_height = abs(int(sample_data[idx][5]))
                     # Append
-                    #all_sample_data.append([sample_left, sample_top, sample_width, sample_height])
+                    # all_sample_data.append([sample_left, sample_top, sample_width, sample_height])
                     all_sample_label.append(sample_label)
                 # Set image between -1 and 1
                 image_norm = image_norm / 127.5 - 1.0

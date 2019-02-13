@@ -80,13 +80,15 @@ class Test(object):
                 for tT in range(len(each_labl_seq)):
                     each_labl = each_labl_seq[tT]
                     each_pred = each_pred_seq[tT]
+                    print(each_labl)
+                    print(each_pred)
                     if each_labl == each_pred:
                         seq_accuracy += 1
                 # Get the accuracy of sequence
                 seq_accuracy = seq_accuracy/len(each_labl_seq)
                 # Update
                 total_acc += seq_accuracy
-
+                break
         print('Final Sequence accuracy is: %f' % (total_acc/n_examples))
 #-------------------------------------------------------------------------------
 def main():
@@ -98,7 +100,7 @@ def main():
     model = Model(image_height=16, image_width=16, l2=0.0002, mode='test')
     # Load Inference model
     testing = Test(model, data, batch_size=16, print_every=200,
-                   pretrained_model='./model/clsfy1/model-640')
+                   pretrained_model='./model/clsfy2/model-392')
     # Begin Evaluation
     testing.test()
 #-------------------------------------------------------------------------------
