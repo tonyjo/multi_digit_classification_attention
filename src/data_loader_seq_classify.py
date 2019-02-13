@@ -6,8 +6,10 @@ import numpy as np
 from copy import deepcopy
 
 class dataLoader(object):
-    def __init__(self, directory, dataset_dir, dataset_name, max_steps, mode='Train'):
+    def __init__(self, directory, dataset_dir, height, width, dataset_name, max_steps, mode='Train'):
         self.mode         = mode
+        self.height       = height
+        self.width        = width
         self.max_steps    = max_steps
         self.directory    = directory
         self.dataset_dir  = dataset_dir
@@ -121,8 +123,7 @@ class dataLoader(object):
                 image = cv2.imread(sample_img_path)
                 image_norm = deepcopy(image)
                 # Gather sample data for all time steps
-                # Extract ground boxes-- sample_left, sample_top, sample_width, sample_height
-                all_sample_data  = []
+                all_sample_image = []
                 all_sample_label = []
                 for idx in range(len(sample_data)):
                     sample_label = abs(int(sample_data[idx][1])) * 1.0
@@ -130,6 +131,7 @@ class dataLoader(object):
                     if sample_label == 10:
                         sample_label = 0.0
                     # Bboxes coordinates
+                    # Extract ground boxes-- sample_left, sample_top, sample_width, sample_height
                     sample_left   = abs(int(sample_data[idx][2]))
                     sample_top    = abs(int(sample_data[idx][3]))
                     sample_width  = abs(int(sample_data[idx][4]))
@@ -141,7 +143,7 @@ class dataLoader(object):
                     # Set image between -1 and 1
                     image_patch_rz = image_patch_rz /127.5 - 1.0
                     # Append
-                    all_sample_data.append(image_patch_rz)
+                    all_sample_image.append(image_patch_rz)
                     all_sample_label.append(sample_label)
                 # Set image between -1 and 1
                 image_norm = image_norm / 127.5 - 1.0
@@ -149,7 +151,8 @@ class dataLoader(object):
                 image_batch.append(image)
                 label_batch.append(all_sample_label)
                 image_norm_batch.append(image_norm)
+                img_seq_batch.append(all_sample_image)
                 # Free Variables
                 del image_norm, image
 
-            yield np.array(image_batch), np.array(image_norm_batch), np.array(label_batch)
+            yield np.array(image_batch), np.array(image_norm_batch), img_seq_batch, label_batch

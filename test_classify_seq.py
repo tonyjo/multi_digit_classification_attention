@@ -6,7 +6,7 @@ import time
 import numpy as np
 import tensorflow as tf
 from src.baseline_classify import Model
-from src.data_loader_pred_classify import dataLoader
+from src.data_loader_seq_classify import dataLoader
 
 class Test(object):
     def __init__(self, model, data, **kwargs):
@@ -53,16 +53,24 @@ class Test(object):
             lbl_batchs = []
             all_prdcts = []
             for i in range(n_iters):
-                image_batch, label_batch = next(test_loader)
-                # Convert one-hot to label
-                feed_dict = {self.model.images: image_batch,
-                             self.model.drop_prob: 1.0}
-                # Predictions
-                pred = sess.run(predictions, feed_dict)
+                _, _, img_seq_batch, label_batch = next(test_loader)
+                each_lbl = []
+                each_prd = []
+                for k in range(batch_size):
+                    each_img_seq = img_seq_batch[k]
+                    each_img_lbl = label_batch[k]
+                    # Convert one-hot to label
+                    feed_dict = {self.model.images: np.array(each_img_seq)
+                                 self.model.drop_prob: 1.0}
+                    # Predictions
+                    pred = sess.run(predictions, feed_dict)
+                    # Collect
+                    each_prd.append(pred)
+                    each_lbl.append(each_img_lbl)
                 # Append
-                all_prdcts.append(pred)
-                lbl_batchs.append(label_batch)
-
+                all_prdcts.append(each_prd)
+                lbl_batchs.append(each_lbl)
+                # Print every
                 if i%self.print_every == 0:
                     print('Completion..{%d/%d}' % (i, n_iters))
         print('Epoch Completion..{%d/%d}' % (n_iters, n_iters))
