@@ -129,7 +129,7 @@ def main():
     trainer = Train(model, data, val_data=None, n_epochs=600, batch_size=64,
                     update_rule='adam', learning_rate=0.0001, print_every=500, save_every=1,
                     pretrained_model=None, model_path='model/clsfy2/', log_path='log_clsfy2/')
-    
+
     # Begin Training
     trainer.train()
 #-------------------------------------------------------------------------------

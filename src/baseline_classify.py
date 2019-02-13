@@ -13,7 +13,7 @@ class Model(object):
         self.drop_prob = tf.placeholder(tf.float32, name='dropout_prob')
 
     def build_model(self):
-        logits = classification_network(self.images, dropout=self.drop_prob, mode=self.mode)
+        logits = base_classification_network(self.images, dropout=self.drop_prob, mode=self.mode)
         print('Classification build model sucess!')
 
         batch_size = tf.shape(logits)[0]
@@ -35,7 +35,7 @@ class Model(object):
         return final_loss/tf.to_float(batch_size)
 
     def build_test_model(self):
-        logits = classification_network(self.images, dropout=self.drop_prob, mode=self.mode)
+        logits = base_classification_network(self.images, dropout=self.drop_prob, mode=self.mode)
         logits_norm = tf.nn.softmax(logits=logits)
 
         print('Classification build model sucess!')
