@@ -188,7 +188,7 @@ class Test(object):
         # Close session
         sess.close()
 
-        # Compute Sequence Accuracy
+        #----------------------Compute Sequence Accuracy------------------------
         total_acc = 0.0
         for t in range(len(label_batch)):
             each_lbl_batch = label_batch[t]

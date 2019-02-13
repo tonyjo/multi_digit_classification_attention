@@ -123,12 +123,13 @@ def main():
                       height=16, width=16, dataset_name='train.txt',
                       max_steps=7, mode='Train')
     # Load Model
-    model = Model(image_height=16, image_width=16, l2=0.0002, mode='train')
+    model = Model(image_height=16, image_width=16, l2=0.0005, mode='train')
 
     # Load Trainer
-    trainer = Train(model, data, val_data=None, n_epochs=1000, batch_size=64,
+    trainer = Train(model, data, val_data=None, n_epochs=600, batch_size=64,
                     update_rule='adam', learning_rate=0.0001, print_every=500, save_every=1,
-                    pretrained_model=None, model_path='model/clsfy1/', log_path='log_clsfy1/')
+                    pretrained_model=None, model_path='model/clsfy2/', log_path='log_clsfy2/')
+    
     # Begin Training
     trainer.train()
 #-------------------------------------------------------------------------------
