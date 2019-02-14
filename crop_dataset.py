@@ -9,7 +9,7 @@ from copy import deepcopy
 parser = argparse.ArgumentParser()
 parser.add_argument("--dataset_type", type=str, help="train/test")
 parser.add_argument("--dataset_dir",  type=str, default="./dataset")
-parser.add_argument("--max_steps",    type=int, default=7, help="max steps")
+parser.add_argument("--max_steps",    type=int, default=6, help="max steps")
 parser.add_argument("--img_height",   type=int, default=64, help="image height")
 parser.add_argument("--img_width",    type=int, default=64, help="image width")
 
@@ -79,19 +79,42 @@ def biggest_box(all_data, sample_index, total_samples):
 
     return low_left, low_top, highest_width, highest_height
 
-def check_low_extend(check_ex):
-    if check_ex < 0:
-        return 0
+def new_x(low_x, delta_W, width, image_width):
+    # Lower bound
+    if delta_W//2 >= low_x:
+        new_left = 0 # Reset to zero
+        change1w = low_x
+    elif (low_x - delta_W//2) > 0:
+        new_left = low_x - delta_W//2
+        change1w = delta_W//2
+    # Upper Bound
+    if (low_x + width + delta_W//2) < image_width:
+        change2w = delta_W//2
     else:
-        return check_ex
+        change2w = image_width - (low_x + width) - 1 # Set to max-width
+    # New width
+    new_width = width + change1w + change2w
 
-def check_high_extend(check_ex, low_ex, orgsample_dim):
-    if (low_ex + check_ex) > orgsample_dim:
-        delta = (low_ex + check_ex) - orgsample_dim
-        check_ex = check_ex - delta
-        return check_ex
+    return new_left, new_width
+
+def new_y(low_y, delta_H, height, image_height):
+    # Lower bound
+    if (delta_H//2) >= low_y:
+        new_top  = 0 # Reset to zero
+        change1h = low_y
+    elif (low_y - delta_H//2) > 0:
+        new_top  = low_y - delta_H//2
+        change1h = delta_H//2
+    # Upper Bound
+    if (low_y + height + delta_H//2) < image_height:
+        change2h = delta_H//2
     else:
-        return check_ex
+        change2h = image_height - (low_y + height) - 1 # Set to max-height
+
+    # New height
+    new_height = height + change1h + change2h
+
+    return new_top, new_height
 #-------------------------------------------------------------------------------
 
 
@@ -112,23 +135,6 @@ for j in range(f['/digitStruct/bbox'].shape[0]):
     if j%4000 == 0:
         print('Completion..{%d/%d}' % (j, f['/digitStruct/bbox'].shape[0]))
 
-        ## -- debug
-        # # check how many samples:
-        # total_samples = np.array(all_data[j][1]).shape[1]
-        # print(np.array(all_data[j][1]).shape)
-        # print('total samples: ', total_samples)
-        # for k in range(total_samples):
-        #     sample_left  = abs(int(all_data[j][1][1][k]))
-        #     sample_top   = abs(int(all_data[j][1][2][k]))
-        #     sample_width = abs(int(all_data[j][1][3][k]))
-        #     sample_heigt = abs(int(all_data[j][1][4][k]))
-        #     print('first: ', abs(int(all_data[j][1][0][k])))
-        #     print('Sample left:   ', sample_left)
-        #     print('Sample right:  ', sample_top)
-        #     print('Sample width:  ', sample_width)
-        #     print('Sample height: ', sample_heigt)
-        # print('#--------------------------------------------------')
-
 print('Completion..{%d/%d}' % (f['/digitStruct/bbox'].shape[0], f['/digitStruct/bbox'].shape[0]))
 print('Completed!')
 
@@ -138,11 +144,10 @@ all_data_copy = deepcopy(all_data)
 
 with open(curated_textfile, 'w') as ft:
     for sample_index in range(len(all_data)):
-    #for sample_index in range(1000):
         try:
             sample_imgph = all_data[sample_index][0]
             sample_image = cv2.imread(file_path+sample_imgph)
-            sample_image_copy = deepcopy(sample_image)
+            sample_image_copy_ = deepcopy(sample_image)
             sample_heigt_org, sample_width_org, _ = sample_image.shape
             # Get how many digits:
             total_samples = np.array(all_data[sample_index][1]).shape[1]
@@ -155,41 +160,30 @@ with open(curated_textfile, 'w') as ft:
             #-------------------------------------------------------------------
             ## Crop
             # Obtain the spatial extend to crop
-            low_x  = low_left - int(expand_percent * low_left)
-            low_x  = check_low_extend(check_ex=low_x)
-
-            low_y  = low_top  - int(expand_percent * low_top)
-            low_y  = check_low_extend(check_ex=low_y)
-
-            high_x = high_width  + int(expand_percent * high_width)
-            high_x = check_high_extend(check_ex=high_x, low_ex=low_x,\
-                                          orgsample_dim=sample_width_org)
-
-            high_y = high_height + int(expand_percent * high_height)
-            high_y = check_high_extend(check_ex=high_y, low_ex=low_y,\
-                                          orgsample_dim=sample_heigt_org)
+            high_width_expand  = np.floor(expand_percent * high_width)
+            high_height_expand = np.floor(expand_percent * high_height)
+            # Expand in x-direction
+            lx, nW = new_x(low_x=low_left, delta_W=high_width_expand,\
+                           width=high_width, image_width=sample_width_org)
+            # Expand in y-direction
+            ly, nH = new_y(low_y=low_top, delta_H=high_height_expand,\
+                           height=high_height, image_height=sample_heigt_org)
 
             #------- X-axis shift -------
-            if low_x > 0:
-                sample_image_copy = sample_image_copy[:, low_x:, :]
-                # Update
-                for i in range(total_samples):
-                    # Update lower bound-- left
-                    all_data_copy[sample_index][1][1][i] -= low_x
-
-            if high_x < sample_width_org:
-                sample_image_copy = sample_image_copy[:, :(low_x+high_x), :]
-
+            for i in range(total_samples):
+                # Update lower bound-- left
+                all_data_copy[sample_index][1][1][i] -= lx
             #------- Y-axis shift-------
-            if low_y > 0:
-                sample_image_copy = sample_image_copy[low_y:, :, :]
-                # Include fixed pixels from all upper bound-- top
-                for i in range(total_samples):
-                    all_data_copy[sample_index][1][2][i] -= low_y
+            for i in range(total_samples):
+                # Update lower bound-- top
+                all_data_copy[sample_index][1][2][i] -= ly
 
-            if high_y < sample_heigt_org:
-                sample_image_copy = sample_image_copy[:(low_y+high_y), :, :]
-
+            # Crop image
+            sample_image_copy = sample_image_copy_[int(ly):int(ly + nH), int(lx):int(lx + nW), :]
+            #print(low_left, low_top, high_width, high_height)
+            #print(high_width_expand, high_height_expand)
+            #print(int(ly), ly, int(ly + nH), nH)
+            #print(sample_image_copy.shape)
             #-------------------------------------------------------------------
             ## Resize image
             sample_heigt_org_rz, sample_width_org_rz, _ = sample_image_copy.shape
@@ -205,6 +199,7 @@ with open(curated_textfile, 'w') as ft:
             ## Curate labels to match new image shape
             # Collect samples
             samples = []
+
             for index_into in range(max_steps):
                 if index_into == 0:
                     sample_label = 0
@@ -227,7 +222,6 @@ with open(curated_textfile, 'w') as ft:
 
                 # Append
                 samples.append([all_data_copy[sample_index][0][:-4], sample_label, sample_left, sample_top, sample_width, sample_heigt])
-
             #-------------------------------------------------------------------
             ## Write and save
             # New sample Image path
@@ -237,7 +231,8 @@ with open(curated_textfile, 'w') as ft:
             # Write
             ft.write(str(samples))
             ft.write('\n')
-
+            # Free memory
+            del sample_image, sample_image_copy, sample_image_copy_
             #-------------------------------------------------------------------
             if sample_index%4000 == 0:
                 print('Completion..{%d/%d}' % (sample_index, len(all_data)))
