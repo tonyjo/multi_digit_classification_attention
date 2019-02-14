@@ -12,8 +12,8 @@ curated_textfile = os.path.join(dataset_dir, dataset_type + '.txt')
 ground_attn_dir  = os.path.join(dataset_dir, dataset_type + '_attn_grnd')
 file_path        = './dataset/%s/' % (dataset_type)
 img_size         = (64, 64) # (width, height)
-max_steps        = 7
-ground_attention_downsample = (7, 7)
+max_steps        = 6
+ground_attention_size = (14, 14) # (width, height)
 
 if os.path.exists(ground_attn_dir) == False:
     os.mkdir(ground_attn_dir)
@@ -59,6 +59,9 @@ def load_file(curated_textfile):
     return all_data
 
 def samples_total(samples):
+    """
+    Computes the total digits in a sample
+    """
     total_samples= 0
     for k in range(max_steps):
         sample_label = samples[k][1]
@@ -68,16 +71,15 @@ def samples_total(samples):
 
     return total_samples
 
-def gaussian2d(image_height, image_width):
+def gaussian2d(sup, scales):
     """
     Creates a 2D Gaussian based on the size and scale.
     """
-    x, y = np.meshgrid(np.linspace(-10,10,image_width),\
-                       np.linspace(-10,10,image_height))
-
-    d = np.sqrt(x*x+y*y)
-    sigma, mu = 5.0, 0.0
-    g = np.exp(-((d-mu)**2 / ( 2.0 * sigma**2 )))
+    var   = scales * scales
+    shape = (sup[0], sup[1])
+    n,m   = [(i-1)/2 for i in shape]
+    y,x   = np.ogrid[-m:m+1,-n:n+1]
+    g = (1/np.sqrt(2*np.pi*var))*np.exp( -(x*x + y*y) / (2*var))
 
     return g
 
@@ -89,148 +91,52 @@ def softmax(x):
 
     return e_x / e_x.sum(axis=0)
 
-def generate_ground_gaussian_attention_mask(sample_top, sample_height, sample_left, sample_width):
+def generate_ground_gaussian_attention_mask(sample_size, sample_top, sample_height, sample_left, sample_width):
     """
     Creates a ground truth attention mask based on ground truth bounding boxes,
     and scales to fit into the box.
     """
-    sample_image_height, sample_image_width = img_size
+    sample_image_height, sample_image_width = sample_size
+    scales = np.sqrt(2) * 5 # Play with the standard deviation
 
-    if sample_height > sample_image_height:
-        sample_height = sample_image_height
+    # Convert even to odd by adding extra px
+    if sample_width%2 == 0:
+        sample_width += 1
 
-    if sample_top + sample_height > sample_image_height:
-        delta_y = (sample_top + sample_height) - sample_image_height
-        sample_top = sample_top - delta_y
+    if sample_height%2 == 0:
+        sample_height += 1
 
-    if sample_width > sample_image_width:
-        sample_width = sample_image_width
+    gaussain = gaussian2d((sample_width, sample_height), scales)
+    gaussain_normalized = (gaussain - np.min(gaussain))/\
+                          (np.max(gaussain) - np.min(gaussain))
+    h_gauss_norm, w_gauss_norm = gaussain_normalized.shape
+    gaussain_normalized = gaussain_normalized.flatten()
+    gaussain_normalized = softmax(gaussain_normalized)
+    gaussain_normalized = np.reshape(gaussain_normalized, (h_gauss_norm, w_gauss_norm))
 
-    if sample_left + sample_width > sample_image_width:
-        delta_x = (sample_left + sample_width) - sample_image_width
-        sample_left = sample_left - delta_x
-
-    # Normalize each value between 0 and 1
-    gaussain = gaussian2d(sample_height, sample_width)
-    gy, gx = gaussain.shape
-    # print(sample_height, sample_width)
-    # print(gaussain.shape)
-    # print(sample_top, sample_left)
-
-    # Generate new array
     sample_attention = np.zeros((sample_image_height, sample_image_width)) * 0.0
-    sample_attention[sample_top:sample_top+sample_height, sample_left:sample_left+sample_width] = gaussain
-    # print(sample_attention.shape)
 
-    # Downsample and re-normalize between 0 and 1
-    sample_attention_res = cv2.resize(sample_attention, ground_attention_downsample, interpolation=cv2.INTER_NEAREST)
-    sample_attention_res_norm = sample_attention_res/(np.sum(sample_attention_res) + 1e-5)
-    sample_attention_res_norm = sample_attention_res_norm.flatten()
+    sample_attention[sample_top:sample_top+sample_height, sample_left:sample_left+sample_width] = gaussain_normalized
 
-    # Sample
-    max_idx  = np.argmax(sample_attention_res_norm)
-    sort_idx = np.argsort(sample_attention_res_norm)
-    # print('****************')
-    sample_attention_res_norm_new = np.zeros((ground_attention_downsample)) * 0.0
-    sample_attention_res_norm_new = sample_attention_res_norm_new.flatten()
+    return sample_attention
 
-    sample_attention_res_norm_new[max_idx] = 0.7
-
-    if sort_idx[-2] == max_idx:
-        sample_attention_res_norm_new[sort_idx[-3]] = 0.3
-    else:
-        sample_attention_res_norm_new[sort_idx[-2]] = 0.2
-        sample_attention_res_norm_new[sort_idx[-3]] = 0.1
-
-    return sample_attention, sample_attention_res_norm_new
-
-def biggest_box(samples, total_samples):
+def generate_start_attention_mask(attn_size):
     """
-    Compute the box encompassing all the digits.
+    Create an attention mask for the start state.
     """
-    all_left  = []
-    all_top   = []
-    all_width = []
-    all_heigt = []
+    x = np.zeros(attn_size) * 0.0
+    x[0, 0] = 1.0
 
-    for k in range(total_samples):
-        sample_label = samples[k][1]
-        sample_left  = samples[k][2]
-        sample_top   = samples[k][3]
-        sample_width = samples[k][4]
-        sample_heigt = samples[k][5]
+    return x
 
-        all_left.append(sample_left)
-        all_top.append(sample_top)
-        all_width.append(sample_left+sample_width)
-        all_heigt.append(sample_top+sample_heigt)
-
-    low_left = min(all_left)
-    low_top  = min(all_top)
-    highest_width = max(all_width) - low_left
-    highest_height = max(all_heigt) - low_top
-
-    return low_left, low_top, highest_width, highest_height
-
-def generate_start_attention_mask_v1():
+def generate_stop_attention_mask(attn_size):
     """
-    Create an attention mask for the stop state, which is a
-    uniform mask around the digits.
+    Create an attention mask for the stop state.
     """
-    sample_image_height, sample_image_width = img_size
-
-    x = np.ones((sample_image_height, sample_image_width)) * 1.0
-    x = x / (sample_image_height*sample_image_width)
-
-    # Downsample and re-normalize between 0 and 1
-    x1 = np.zeros(ground_attention_downsample) * 0.0
-    x1[0, 0] = 0.25
-    x1[0, 6] = 0.25
-    x1[6, 0] = 0.25
-    x1[6, 6] = 0.25
-
-    return x, x1
-
-def generate_stop_attention_mask_v1(samples, total_samples):
-    """
-    Create an attention mask for the stop state, which is a
-    uniform mask around the digits.
-    """
-    sample_image_height, sample_image_width = img_size
-
-    low_left, low_top, highest_width, highest_height = biggest_box(samples, total_samples)
-
-    x = np.ones((sample_image_height, sample_image_width))
-
-    mask = np.ones((sample_image_height, sample_image_width))
-    mask[low_top:low_top+highest_height, low_left:low_left+highest_width] = 0
-
-    x2 = np.multiply(x, mask)
-
-    # Downsample and re-normalize between 0 and 1
-    x3 = cv2.resize(x2, ground_attention_downsample, interpolation=cv2.INTER_NEAREST)
-    x3 = np.float32(x3)
-
-    x3_1 = x3/np.sum(x3 + 1e-9) + 1e-5 # For numerical stability
-
-    return x2, x3_1
-
-def generate_stop_attention_mask_v2():
-    """
-    Create an attention mask for the stop state, which is a
-    uniform mask around the digits.
-    """
-    sample_image_height, sample_image_width = img_size
-
-    x = np.zeros((sample_image_height, sample_image_width)) * 0.0
+    x = np.zeros(attn_size) * 0.0
     x[-1, -1] = 1.0
 
-    # Downsample and re-normalize between 0 and 1
-    x1 = np.zeros(ground_attention_downsample) * 0.0
-    x1[-1, -1] = 1.0
-
-    return x, x1
-
+    return x
 #-------------------------------------------------------------------------------
 
 
@@ -254,17 +160,24 @@ for sample_index in range(len(all_data)):
         # Generate attention mask
         if k == 0:
             # Start state
-            _, attn_mask = generate_start_attention_mask_v1()
+            _, attn_mask = generate_start_attention_mask(attn_size=ground_attention_size)
         elif int(sample_label) == 11:
             # End state
-            _, attn_mask = generate_stop_attention_mask_v2()
+            _, attn_mask = generate_stop_attention_mask(attn_size=ground_attention_size)
         else:
             # Digit attention mask
+            # Rescale axis
+            sample_left  = (sample_left  * ground_attention_size[0])/img_size[0]
+            sample_top   = (sample_top   * ground_attention_size[1])/img_size[1]
+            sample_width = (sample_width * ground_attention_size[0])/img_size[0]
+            sample_heigt = (sample_heigt * ground_attention_size[1])/img_size[1]
+
             _, attn_mask = generate_ground_gaussian_attention_mask(sample_top,\
                                         sample_heigt, sample_left, sample_width)
 
         # Save attention mask
-        attn_save_path = os.path.join(ground_attn_dir, all_data[sample_index][0][0][:-4] + '_' + str(k) + '.npy')
+        attn_save_path = os.path.join(ground_attn_dir,\
+                      all_data[sample_index][0][0][:-4] + '_' + str(k) + '.npy')
         np.save(attn_save_path, attn_mask)
 
     if sample_index%4000 == 0:
