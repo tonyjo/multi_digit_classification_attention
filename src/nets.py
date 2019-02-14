@@ -48,7 +48,7 @@ def attn_cnn(images, mode='train'):
     with tf.variable_scope('Attention_CNN'):
         layer_1 = slim.conv2d(images, 128, [5, 5],
                             activation_fn=None,
-                            padding='SAME',
+                            padding='VALID',
                             weights_initializer=tf.contrib.layers.variance_scaling_initializer(mode='FAN_IN'),
                             stride=1, scope='layer_1')
         layer_1 = _batch_norm(layer_1, mode=mode, name='layer_1')
@@ -73,24 +73,51 @@ def attn_cnn(images, mode='train'):
         layer_3 = tf.nn.leaky_relu(layer_3, name='relu_layer_3')
         print(layer_3.get_shape())
 
-        layer_4 = slim.conv2d(layer_3, 128, [3, 3],
+        layer_4 = slim.conv2d(layer_3, 128, [5, 5],
                             activation_fn=None,
                             padding='VALID',
                             weights_initializer=tf.contrib.layers.variance_scaling_initializer(mode='FAN_IN'),
-                            stride=2, scope='layer_4')
+                            stride=1, scope='layer_4')
         layer_4 = _batch_norm(layer_4, mode=mode, name='layer_4')
         layer_4 = tf.nn.leaky_relu(layer_4, name='relu_layer_4')
         print(layer_4.get_shape())
 
-        layer_5 = slim.conv2d(layer_4, 128, [3, 3],
+        layer_5 = slim.conv2d(layer_4, 128, [5, 5],
                             activation_fn=None,
                             padding='SAME',
                             weights_initializer=tf.contrib.layers.variance_scaling_initializer(mode='FAN_IN'),
                             stride=1, scope='layer_5')
         layer_5 = _batch_norm(layer_5, mode=mode, name='layer_5')
+        layer_5 = tf.nn.leaky_relu(layer_5, name='relu_layer_5')
         print(layer_5.get_shape())
 
-        return layer_5
+        layer_6 = slim.conv2d(layer_5, 128, [5, 5],
+                            activation_fn=None,
+                            padding='SAME',
+                            weights_initializer=tf.contrib.layers.variance_scaling_initializer(mode='FAN_IN'),
+                            stride=2, scope='layer_6')
+        layer_6 = _batch_norm(layer_5, mode=mode, name='layer_6')
+        layer_6 = tf.nn.leaky_relu(layer_5, name='relu_layer_6')
+        print(layer_6.get_shape())
+
+        layer_7 = slim.conv2d(layer_6, 128, [5, 5],
+                            activation_fn=None,
+                            padding='SAME',
+                            weights_initializer=tf.contrib.layers.variance_scaling_initializer(mode='FAN_IN'),
+                            stride=1, scope='layer_7')
+        layer_7 = _batch_norm(layer_5, mode=mode, name='layer_7')
+        layer_7 = tf.nn.leaky_relu(layer_5, name='relu_layer_7')
+        print(layer_7.get_shape())
+
+        layer_8 = slim.conv2d(layer_7, 128, [5, 5],
+                            activation_fn=None,
+                            padding='SAME',
+                            weights_initializer=tf.contrib.layers.variance_scaling_initializer(mode='FAN_IN'),
+                            stride=1, scope='layer_8')
+        layer_8 = _batch_norm(layer_5, mode=mode, name='layer_8')
+        print(layer_8.get_shape())
+
+        return layer_8
 
 def classification_network(images, dropout, mode='train'):
     with tf.variable_scope('classification_CNN'):
