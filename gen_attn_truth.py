@@ -5,7 +5,7 @@ import h5py
 import numpy as np
 
 #----------------------------Arguments---------------------------------------
-dataset_type     = 'test' # Change to train/test
+dataset_type     = 'train' # Change to train/test
 dataset_dir      = './dataset'
 curated_dataset  = os.path.join(dataset_dir, dataset_type + '_cropped')
 curated_textfile = os.path.join(dataset_dir, dataset_type + '.txt')
