@@ -99,13 +99,29 @@ def generate_ground_gaussian_attention_mask(sample_size, sample_top, sample_heig
     sample_image_height, sample_image_width = sample_size
     scales = np.sqrt(2) * 5 # Play with the standard deviation
 
-    # Convert even to odd by adding extra px
+    # Check size:
+    if sample_left + sample_width >= sample_image_width:
+        delta_w = (sample_left + sample_width) - sample_image_width
+        sample_width -= delta_w
+
+    if sample_top + sample_height >= sample_image_height:
+        delta_h = (sample_top + sample_height) - sample_image_height
+        sample_height -= delta_h
+
+    # Convert even to odd by adding or removing extra px
     if sample_width%2 == 0:
-        sample_width += 1
+        if sample_left + sample_width + 1 >= sample_image_width:
+            sample_width -= 1
+        else:
+            sample_width += 1
 
     if sample_height%2 == 0:
-        sample_height += 1
+        if sample_top + sample_height + 1 >= sample_image_height:
+            sample_height -= 1
+        else:
+            sample_height += 1
 
+    # Generate gaussian
     gaussain = gaussian2d((sample_width, sample_height), scales)
     gaussain_normalized = (gaussain - np.min(gaussain))/\
                           (np.max(gaussain) - np.min(gaussain))
@@ -145,8 +161,8 @@ def generate_stop_attention_mask(attn_size):
 all_data = load_file(curated_textfile)
 print('Data loaded!')
 
-#for sample_index in range(len(all_data)):
-for sample_index in [988]:
+for sample_index in range(len(all_data)):
+#for sample_index in range(1000):
     #print(sample_index)
     sample_image_path = curated_dataset + '/' + all_data[sample_index][0][0]
 
