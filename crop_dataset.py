@@ -180,10 +180,7 @@ with open(curated_textfile, 'w') as ft:
 
             # Crop image
             sample_image_copy = sample_image_copy_[int(ly):int(ly + nH), int(lx):int(lx + nW), :]
-            #print(low_left, low_top, high_width, high_height)
-            #print(high_width_expand, high_height_expand)
-            #print(int(ly), ly, int(ly + nH), nH)
-            #print(sample_image_copy.shape)
+
             #-------------------------------------------------------------------
             ## Resize image
             sample_heigt_org_rz, sample_width_org_rz, _ = sample_image_copy.shape

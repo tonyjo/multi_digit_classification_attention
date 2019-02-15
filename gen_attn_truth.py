@@ -145,8 +145,8 @@ def generate_stop_attention_mask(attn_size):
 all_data = load_file(curated_textfile)
 print('Data loaded!')
 
-for sample_index in range(len(all_data)):
-#for sample_index in [988]:
+#for sample_index in range(len(all_data)):
+for sample_index in [988]:
     #print(sample_index)
     sample_image_path = curated_dataset + '/' + all_data[sample_index][0][0]
 
@@ -167,10 +167,10 @@ for sample_index in range(len(all_data)):
         else:
             # Digit attention mask
             # Rescale axis
-            sample_left  = (sample_left  * ground_attention_size[0])/img_size[0]
-            sample_top   = (sample_top   * ground_attention_size[1])/img_size[1]
-            sample_width = (sample_width * ground_attention_size[0])/img_size[0]
-            sample_heigt = (sample_heigt * ground_attention_size[1])/img_size[1]
+            sample_left  = int(np.floor((sample_left  * ground_attention_size[0])/img_size[0]))
+            sample_top   = int(np.floor((sample_top   * ground_attention_size[1])/img_size[1]))
+            sample_width = int(np.floor((sample_width * ground_attention_size[0])/img_size[0]))
+            sample_heigt = int(np.floor((sample_heigt * ground_attention_size[1])/img_size[1]))
 
             attn_mask = generate_ground_gaussian_attention_mask(ground_attention_size,\
                                        sample_top, sample_heigt, sample_left, sample_width)
