@@ -121,14 +121,14 @@ class Train(object):
 def main():
     # Load train dataset
     data = dataLoader(directory='./dataset', dataset_dir='train_cropped',
-                      dataset_name='train.txt', max_steps=7, mode='Train')
+                      dataset_name='train.txt', max_steps=6, mode='Train')
     # Load Model
-    model = Model(dim_feature=[49, 128], dim_hidden=128, n_time_step=7,
+    model = Model(dim_feature=[196, 128], dim_hidden=128, n_time_step=6,
                   alpha_c=1.0, image_height=64, image_width=64, mode='train')
     # Load Trainer
     trainer = Train(model, data, val_data=None, n_epochs=1000, batch_size=64,
-                    update_rule='adam', learning_rate=0.0001, print_every=100, save_every=1,
-                    pretrained_model=None, model_path='model/lstm1/', log_path='log1/')
+                    update_rule='adam', learning_rate=0.0001, print_every=100, save_every=5,
+                    pretrained_model=None, model_path='model/lstm2/', log_path='log2/')
     # Begin Training
     trainer.train()
 #-------------------------------------------------------------------------------

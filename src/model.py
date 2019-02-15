@@ -1,7 +1,7 @@
 from __future__ import print_function
 import tensorflow as tf
 import numpy as np
-from nets import net
+from nets import attn_cnn as net
 
 class Model(object):
     def __init__(self, dim_feature=[49, 256], dim_hidden=128, n_time_step=3,
