@@ -160,10 +160,10 @@ for sample_index in range(len(all_data)):
         # Generate attention mask
         if k == 0:
             # Start state
-            _, attn_mask = generate_start_attention_mask(attn_size=ground_attention_size)
+            attn_mask = generate_start_attention_mask(attn_size=ground_attention_size)
         elif int(sample_label) == 11:
             # End state
-            _, attn_mask = generate_stop_attention_mask(attn_size=ground_attention_size)
+            attn_mask = generate_stop_attention_mask(attn_size=ground_attention_size)
         else:
             # Digit attention mask
             # Rescale axis
@@ -172,7 +172,7 @@ for sample_index in range(len(all_data)):
             sample_width = (sample_width * ground_attention_size[0])/img_size[0]
             sample_heigt = (sample_heigt * ground_attention_size[1])/img_size[1]
 
-            _, attn_mask = generate_ground_gaussian_attention_mask(ground_attention_size,\
+            attn_mask = generate_ground_gaussian_attention_mask(ground_attention_size,\
                                        sample_top, sample_heigt, sample_left, sample_width)
 
         # Save attention mask
