@@ -78,7 +78,7 @@ class Train(object):
             sess.run(tf.global_variables_initializer())
             # Tensorboard summary path
             summary_writer = tf.summary.FileWriter(self.log_path, graph=sess.graph)
-            saver = tf.train.Saver(max_to_keep=10)
+            saver = tf.train.Saver(max_to_keep=5)
 
             if self.pretrained_model is not None:
                 print("Start training with pretrained Model..")
