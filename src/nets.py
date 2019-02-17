@@ -124,16 +124,16 @@ def classification_network(images, dropout, mode='train'):
     with tf.variable_scope('classification_CNN'):
         layer_1 = slim.conv2d(images, 64, [5, 5],
                             activation_fn=None,
-                            padding='SAME',
+                            padding='VALID',
                             weights_initializer=tf.contrib.layers.variance_scaling_initializer(mode='FAN_IN'),
                             stride=1, scope='layer_1')
         layer_1 = _batch_norm(layer_1, mode=mode, name='layer_1')
         layer_1 = tf.nn.leaky_relu(layer_1, name='relu_layer_1')
         #print(layer_1.get_shape())
 
-        layer_2 = slim.conv2d(layer_1, 96, [3, 3],
+        layer_2 = slim.conv2d(layer_1, 96, [5, 5],
                             activation_fn=None,
-                            padding='VALID',
+                            padding='SAME',
                             weights_initializer=tf.contrib.layers.variance_scaling_initializer(mode='FAN_IN'),
                             stride=1, scope='layer_2')
         layer_2 = _batch_norm(layer_2, mode=mode, name='layer_2')
@@ -170,24 +170,31 @@ def classification_network(images, dropout, mode='train'):
                             activation_fn=None,
                             padding='VALID',
                             weights_initializer=tf.contrib.layers.variance_scaling_initializer(mode='FAN_IN'),
-                            stride=2, scope='layer_6')
+                            stride=1, scope='layer_6')
         layer_6 = _batch_norm(layer_6, mode=mode, name='layer_6')
         layer_6 = tf.nn.leaky_relu(layer_6, name='relu_layer_6')
         #print(layer_6.get_shape())
 
     with tf.variable_scope('classification_Fully_Connected'):
+        # Flatten
         layer_6 = slim.flatten(layer_6)
-        layer_6 = tf.nn.dropout(layer_6, keep_prob=dropout)
-        layer_7 = tf.contrib.layers.fully_connected(layer_6, 128,
-                                                    activation_fn=None)
-        layer_7 = _batch_norm(layer_7, mode=mode, name='layer_9')
-        layer_7 = tf.nn.leaky_relu(layer_7, name='relu_layer_9')
+        # FC--1
+        layer_7 = tf.contrib.layers.fully_connected(layer_6, 1024,
+                             activation_fn=None, scope='layer_7')
+        layer_7 = _batch_norm(layer_7, mode=mode, name='layer_7')
+        layer_7 = tf.nn.leaky_relu(layer_7,  name='relu_layer_7')
         layer_7 = tf.nn.dropout(layer_7, keep_prob=dropout)
+        # FC-2
+        layer_8 = tf.contrib.layers.fully_connected(layer_7, 1024,
+                             activation_fn=None, scope='layer_8')
+        layer_8 = _batch_norm(layer_8, mode=mode, name='layer_8')
+        layer_8 = tf.nn.leaky_relu(layer_8,  name='relu_layer_8')
+        layer_8 = tf.nn.dropout(layer_8, keep_prob=dropout)
         # Classification layer
-        layer_8 = tf.contrib.layers.fully_connected(layer_7, 10,
-                                                    activation_fn=None)
+        logits = tf.contrib.layers.fully_connected(layer_8, 10,
+                             activation_fn=None, scope='layer_clsfy')
 
-    return layer_8
+    return logits
 
 def base_classification_network(images, dropout, mode='train'):
     with tf.variable_scope('classification_CNN'):

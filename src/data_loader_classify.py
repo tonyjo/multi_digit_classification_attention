@@ -94,6 +94,32 @@ class dataLoader(object):
 
                 yield data
 
+    def valid_bbox(self, sample_left, sample_top, sample_width, sample_height, img_size):
+        # img_size
+        h, w = img_size
+        delta_w = 0
+        delta_h = 0
+        # Random extension-- 10px up and down & 5px left and right
+        sample_left_ext    = np.random.randint(low=0, high=5)
+        sample_top_ext     = np.random.randint(low=0, high=10)
+        sample_width_ext   = np.random.randint(low=0, high=5)
+        sample_height _ext = np.random.randint(low=0, high=10)
+
+        # Width
+        if (sample_left -  sample_left_ext) >= 0:
+            delta_w = sample_left -  sample_left_ext
+            sample_left_new = sample_left -  sample_left_ext
+
+        if (sample_left + sample_width + sample_width_ext) < (w - 1):
+             delta_h = sample_left -  sample_left_ext
+             sample_width_new =
+
+        # Height
+
+
+        return sample_left, sample_top, sample_width, sample_height
+
+
     def gen_data_batch(self, batch_size):
         # Generate data based on training/validation
         if self.mode == 'Train':
@@ -111,6 +137,7 @@ class dataLoader(object):
                 sample_data = next(data_gen)
                 sample_img_path = os.path.join(self.directory, self.dataset_dir, sample_data[0])
                 image = cv2.imread(sample_img_path)
+                img_h, img_w, _ = image.shape
                 # Gather sample data for all time steps
                 # Extract ground boxes-- sample_left, sample_top, sample_width, sample_height
                 sample_label  = abs(int(sample_data[1])) * 1.0
@@ -120,17 +147,19 @@ class dataLoader(object):
                     one_hot_label[0] = 1.0
                 else:
                     one_hot_label[int(sample_label)] = 1.0
-
+                # Get Bboxes
                 sample_left   = abs(int(sample_data[2]))
                 sample_top    = abs(int(sample_data[3]))
                 sample_width  = abs(int(sample_data[4]))
                 sample_height = abs(int(sample_data[5]))
-
+                # Random bbox
+                sample_left, sample_top, sample_width, sample_height = self.
+                # Extract image_patch
                 image_patch = image[sample_top:sample_top+sample_height, sample_left:sample_left+sample_width, :]
-                # Zooming
-                image_patch_rz = cv2.resize(image_patch, (self.width, self.height), interpolation = cv2.INTER_AREA)
+                # Resize
+                image_patch_rz = cv2.resize(image_patch, (self.width, self.height), interpolation = cv2.INTER_LINEAR)
                 # Set image between -1 and 1
-                image_patch_rz = image_patch_rz /127.5 - 1.0
+                image_patch_rz = image_patch_rz/127.5 - 1.0
                 # Append to generated batch
                 image_batch.append(image_patch_rz)
                 label_batch.append(one_hot_label)

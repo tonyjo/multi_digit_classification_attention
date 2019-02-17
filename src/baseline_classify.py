@@ -1,7 +1,7 @@
 from __future__ import print_function
 import tensorflow as tf
 import numpy as np
-from nets import base_classification_network as base_classification_network
+from nets import classification_network as base_classification_network
 
 class Model(object):
     def __init__(self, image_height=16, image_width=16, l2=0.0002, mode='train'):
