@@ -103,21 +103,33 @@ class dataLoader(object):
         sample_left_ext    = np.random.randint(low=0, high=5)
         sample_top_ext     = np.random.randint(low=0, high=10)
         sample_width_ext   = np.random.randint(low=0, high=5)
-        sample_height _ext = np.random.randint(low=0, high=10)
+        sample_height_ext  = np.random.randint(low=0, high=10)
 
-        # Width
+        # X-axis
         if (sample_left -  sample_left_ext) >= 0:
-            delta_w = sample_left -  sample_left_ext
+            delta_w = sample_left_ext
             sample_left_new = sample_left -  sample_left_ext
+        else:
+            sample_left_new = sample_left
 
         if (sample_left + sample_width + sample_width_ext) < (w - 1):
-             delta_h = sample_left -  sample_left_ext
-             sample_width_new =
+             sample_width_new = sample_width + sample_width_ext + delta_w
+        else:
+            sample_width_new = sample_width + delta_w
 
-        # Height
+        # Y-axis
+        if (sample_top -  sample_top_ext) >= 0:
+            delta_h = sample_top_ext
+            sample_top_new = sample_top -  sample_top_ext
+        else:
+            sample_top_new = sample_top
 
+        if (sample_top + sample_height + sample_height_ext) < (h - 1):
+             sample_height_new = sample_height + sample_height_ext + delta_h
+        else:
+            sample_height_new = sample_height + delta_h
 
-        return sample_left, sample_top, sample_width, sample_height
+        return sample_left_new, sample_top_new, sample_width_new, sample_height_new
 
 
     def gen_data_batch(self, batch_size):
@@ -152,8 +164,8 @@ class dataLoader(object):
                 sample_top    = abs(int(sample_data[3]))
                 sample_width  = abs(int(sample_data[4]))
                 sample_height = abs(int(sample_data[5]))
-                # Random bbox
-                sample_left, sample_top, sample_width, sample_height = self.
+                # Sample Random bbox extensions
+                sample_left, sample_top, sample_width, sample_height = self.valid_bbox(sample_left, sample_top, sample_width, sample_height, img_size=(img_h, img_w))
                 # Extract image_patch
                 image_patch = image[sample_top:sample_top+sample_height, sample_left:sample_left+sample_width, :]
                 # Resize

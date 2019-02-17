@@ -4,7 +4,7 @@ import numpy as np
 from nets import classification_network as base_classification_network
 
 class Model(object):
-    def __init__(self, image_height=16, image_width=16, l2=0.0002, mode='train'):
+    def __init__(self, image_height=24, image_width=24, l2=0.0002, mode='train'):
         self.l2 = l2
         self.mode = mode
         # Placeholder
