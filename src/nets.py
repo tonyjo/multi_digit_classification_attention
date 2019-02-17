@@ -155,6 +155,7 @@ def classification_network(images, dropout, mode='train'):
                             weights_initializer=tf.contrib.layers.variance_scaling_initializer(mode='FAN_IN'),
                             stride=1, scope='layer_4')
         layer_4 = _batch_norm(layer_4, mode=mode, name='layer_4')
+        layer_4 = tf.nn.leaky_relu(layer_4, name='relu_layer_4')
         #print(layer_4.get_shape())
 
         layer_5 = slim.conv2d(layer_4, 256, [3, 3],
