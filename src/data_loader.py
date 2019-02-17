@@ -3,6 +3,7 @@ import os
 import cv2
 import random
 import numpy as np
+from copy import deepcopy
 
 class dataLoader(object):
     def __init__(self, directory, dataset_dir, dataset_name, max_steps, mode='Train'):
@@ -82,15 +83,17 @@ class dataLoader(object):
 
         while True:
             image_batch      = []
+            image_batch_norm = []
             grd_bboxes_batch = []
             grd_attnMk_batch = []
             # Generate training batch
             for _ in range(batch_size):
-                sample_data = next(data_gen)
+                sample_data     = next(data_gen)
                 sample_img_path = os.path.join(self.directory, self.dataset_dir, sample_data[0][0])
-                image = cv2.imread(sample_img_path)
+                image           = cv2.imread(sample_img_path)
+                image_norm      = deepcopy(image)
                 # Set image between -1 and 1
-                image = image /127.5 - 1.0
+                image_norm = image_norm /127.5 - 1.0
                 # Gather sample data for all time steps
                 all_sample_data = []
                 all_sample_attn = []
@@ -110,7 +113,8 @@ class dataLoader(object):
 
                 # Append to generated batch
                 image_batch.append(image)
+                image_batch_norm.append(image_norm)
                 grd_bboxes_batch.append(all_sample_data)
                 grd_attnMk_batch.append(all_sample_attn)
 
-            yield np.array(image_batch), np.array(grd_bboxes_batch), np.array(grd_attnMk_batch)
+            yield np.array(image_batch), np.array(image_batch_norm), np.array(grd_bboxes_batch), np.array(grd_attnMk_batch)
