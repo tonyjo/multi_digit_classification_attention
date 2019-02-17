@@ -192,8 +192,8 @@ def classification_network(images, dropout, mode='train'):
         layer_8 = tf.nn.leaky_relu(layer_8,  name='relu_layer_8')
         layer_8 = tf.nn.dropout(layer_8, keep_prob=dropout)
         # Classification layer
-        logits = tf.contrib.layers.fully_connected(layer_8, 10,
-                             activation_fn=None, scope='layer_clsfy')
+        logits  = tf.contrib.layers.fully_connected(layer_8, 10,
+                         activation_fn=None, scope='layer_clsfy')
 
     return logits
 
