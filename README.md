@@ -29,7 +29,7 @@ python train.py
 
 2. To train classification model run the following command:
 ``` bash
-python gen_attn_truth --dataset_type=<train/test>
+python train_classify_net.py
 ```
 
 
