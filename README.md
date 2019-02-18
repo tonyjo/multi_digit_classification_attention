@@ -43,5 +43,5 @@ and open and run:
 
 ### Next steps
 1. Build a stronger classification network, maybe by training changes i.e. advanced data augmentations or using the extra dataset
-2. Verfify and finish up ```test_pred_seq.py```
+2. Verify and finish up ```test_pred_seq.py```
 3. Change up hyper-paramters to get better results.
