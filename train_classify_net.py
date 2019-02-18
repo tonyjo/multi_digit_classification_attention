@@ -78,7 +78,7 @@ class Train(object):
             sess.run(tf.global_variables_initializer())
             # Tensorboard summary path
             summary_writer = tf.summary.FileWriter(self.log_path, graph=sess.graph)
-            saver = tf.train.Saver(max_to_keep=10)
+            saver = tf.train.Saver(max_to_keep=5)
 
             if self.pretrained_model is not None:
                 print("Start training with pretrained Model..")
@@ -120,15 +120,15 @@ class Train(object):
 def main():
     # Load train dataset
     data = dataLoader(directory='./dataset', dataset_dir='train_cropped',
-                      height=16, width=16, dataset_name='train.txt',
-                      max_steps=7, mode='Train')
+                      height=24, width=24, dataset_name='train.txt',
+                      max_steps=6, mode='Train')
     # Load Model
-    model = Model(image_height=16, image_width=16, l2=0.0005, mode='train')
+    model = Model(image_height=24, image_width=24, l2=0.0005, mode='train')
 
     # Load Trainer
-    trainer = Train(model, data, val_data=None, n_epochs=600, batch_size=64,
-                    update_rule='adam', learning_rate=0.0001, print_every=500, save_every=1,
-                    pretrained_model=None, model_path='model/clsfy2/', log_path='log_clsfy2/')
+    trainer = Train(model, data, val_data=None, n_epochs=400, batch_size=64,
+                    update_rule='adam', learning_rate=0.0001, print_every=500, save_every=5,
+                    pretrained_model=None, model_path='model/clsfy3/', log_path='log_clsfy3/')
 
     # Begin Training
     trainer.train()
