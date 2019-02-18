@@ -1,4 +1,5 @@
 # Multi-digit detection  via attention and classification
+![alt text](./images/title.png "title-image")
 
 ### Preparing training and testing data
 First we need to generate the valid pixel locations.
