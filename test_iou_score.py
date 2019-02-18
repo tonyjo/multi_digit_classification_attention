@@ -12,6 +12,7 @@ class Test(object):
     def __init__(self, model, data, **kwargs):
         self.model            = model
         self.data             = data
+        self.max_steps        = kwargs.pop('max_steps', 6)
         self.batch_size       = kwargs.pop('batch_size', 64)
         self.print_every      = kwargs.pop('print_every', 100)
         self.pretrained_model = kwargs.pop('pretrained_model', None)
@@ -154,7 +155,8 @@ def main():
     model = Model(dim_feature=[196, 128], dim_hidden=128, n_time_step=6,
                   alpha_c=1.0, image_height=64, image_width=64, mode='test')
     # Load Inference model
-    testing = Test(model, data, batch_size=1, print_every=2000, pretrained_model='model/lstm2/model-650')
+    testing = Test(model, data, max_steps=6, batch_size=1, print_every=2000,
+                   pretrained_model='model/lstm2/model-650')
     # Begin Evaluation
     testing.test()
 #-------------------------------------------------------------------------------

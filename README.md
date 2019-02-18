@@ -14,5 +14,3 @@ mkdir dataset
 ``` bash
 python crop_dataset --dataset_type=<train/test>
 ```
-
-
