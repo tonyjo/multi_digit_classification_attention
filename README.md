@@ -42,6 +42,6 @@ and open and run:
 > evaluate_and_viz.ipynb
 
 ### Next steps
-1. Build a stronger classification network, maybe by training changes or using the extra dataset
+1. Build a stronger classification network, maybe by training changes i.e. advanced data augmentations or using the extra dataset
 2. Verfify and finish up ```test_pred_seq.py```
 3. Change up hyper-paramters to get better results.
