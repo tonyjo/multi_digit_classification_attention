@@ -1,7 +1,7 @@
 # Multi-digit detection  via attention and classification
 ![alt text](./images/title.png "title-image")
 
-### Preparing training and testing data
+### Preparing data
 First we need to generate the valid pixel locations.
 
 1. Go to the cloned multi_digit_classification_attention folder and run the following command:
@@ -13,5 +13,34 @@ mkdir dataset
 
 3. Select which type to data to curate and run the following command:
 ``` bash
-python crop_dataset --dataset_type=<train/test>
+python gen_crop_dataset --dataset_type=<train/test>
 ```
+
+4. Select which type to data to generate attention mask and run the following command:
+``` bash
+python gen_attn_truth --dataset_type=<train/test>
+```
+### Training
+
+1. To train detection model run the following command:
+``` bash
+python train.py
+```
+
+2. To train classification model run the following command:
+``` bash
+python gen_attn_truth --dataset_type=<train/test>
+```
+
+
+### Inference
+1. To test and visualize results run the following command:
+``` bash
+jupyter notebook
+```
+and open and run:
+> evaluate_and_viz.ipynb
+
+### Next steps
+1. Build a stronger classification network, maybe by training changes or using the extra dataset
+2. Finish up with valdiation loader

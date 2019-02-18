@@ -3,9 +3,14 @@ import os
 import cv2
 import h5py
 import numpy as np
+import argparse
+
+parser = argparse.ArgumentParser()
+parser.add_argument("--dataset_type", type=str, help="train/test")
+args = parser.parse_args()
 
 #----------------------------Arguments---------------------------------------
-dataset_type     = 'train' # Change to train/test
+dataset_type     = args.dataset_type # Change to train/test
 dataset_dir      = './dataset'
 curated_dataset  = os.path.join(dataset_dir, dataset_type + '_cropped')
 curated_textfile = os.path.join(dataset_dir, dataset_type + '.txt')
