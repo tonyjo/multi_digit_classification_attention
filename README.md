@@ -2,7 +2,7 @@
 ![alt text](./images/title.png "title-image")
 
 ### Preparing data
-First we need to generate the valid pixel locations.
+We need to prepare the raw SVHN dataset
 
 1. Go to the cloned multi_digit_classification_attention folder and run the following command:
 ``` bash
