@@ -78,7 +78,7 @@ class Train(object):
             sess.run(tf.global_variables_initializer())
             # Tensorboard summary path
             summary_writer = tf.summary.FileWriter(self.log_path, graph=sess.graph)
-            saver = tf.train.Saver(max_to_keep=5)
+            saver = tf.train.Saver(max_to_keep=2)
 
             if self.pretrained_model is not None:
                 print("Start training with pretrained Model..")
@@ -89,7 +89,7 @@ class Train(object):
                 curr_loss = 0
                 start_t   = time.time()
                 for i in range(n_iters_per_epoch):
-                    image_batch, grd_bboxes_batch, grd_attn_batch = next(train_loader)
+                    _, image_batch, grd_bboxes_batch, grd_attn_batch = next(train_loader)
                     feed_dict = {self.model.images: image_batch,
                                  self.model.bboxes: grd_bboxes_batch,
                                  self.model.gnd_attn: grd_attn_batch,
@@ -128,7 +128,7 @@ def main():
     # Load Trainer
     trainer = Train(model, data, val_data=None, n_epochs=1000, batch_size=64,
                     update_rule='adam', learning_rate=0.0001, print_every=100, save_every=5,
-                    pretrained_model=None, model_path='model/lstm2/', log_path='log2/')
+                    pretrained_model=None, model_path='model/lstm1/', log_path='log1/')
     # Begin Training
     trainer.train()
 #-------------------------------------------------------------------------------
