@@ -1,7 +1,7 @@
 from __future__ import print_function
 import os
 os.environ["CUDA_DEVICE_ORDER"]="PCI_BUS_ID"
-os.environ["CUDA_VISIBLE_DEVICES"]="0"
+os.environ["CUDA_VISIBLE_DEVICES"]="3"
 import time
 import numpy as np
 import tensorflow as tf
@@ -123,12 +123,12 @@ def main():
     data = dataLoader(directory='./dataset', dataset_dir='train_cropped',
                       dataset_name='train.txt', max_steps=6, mode='Train')
     # Load Model
-    model = Model(dim_feature=[196, 128], dim_hidden=128, n_time_step=6,
-                  alpha_c=1.0, image_height=64, image_width=64, mode='train')
+    model = Model(dim_feature=[196, 128], dim_hidden=64, n_time_step=6,
+                  alpha_c=0.0, image_height=64, image_width=64, mode='train')
     # Load Trainer
-    trainer = Train(model, data, val_data=None, n_epochs=1000, batch_size=64,
+    trainer = Train(model, data, val_data=None, n_epochs=256, batch_size=96,
                     update_rule='adam', learning_rate=0.0001, print_every=100, save_every=5,
-                    pretrained_model=None, model_path='model/lstm1/', log_path='log1/')
+                    pretrained_model=None, model_path='model/lstm4/', log_path='log4/')
     # Begin Training
     trainer.train()
 #-------------------------------------------------------------------------------

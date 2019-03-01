@@ -112,11 +112,12 @@ class Model(object):
                 grnd_alpha = self.gnd_attn[:, T, :] # (N, L)
                 eror_alpha =  grnd_alpha * tf.log(grnd_alpha/(pred_alpha + 0.0001) + 1e-8)  # Avoid NaN
                 alpha_loss += tf.reduce_sum(eror_alpha) # (1)
-
             # Weight alpha loss
             alpha_reg = self.alpha_c * alpha_loss
             # Add alpha loss to
             final_loss += alpha_reg
+        else:
+            print('No Attention Regularization!')
 
         if self.l2 > 0:
             print('L2 regularization:')
