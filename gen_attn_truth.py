@@ -5,10 +5,12 @@ import h5py
 import numpy as np
 import argparse
 
+# Numpy seed values
+np.seed(8964)
+
 parser = argparse.ArgumentParser()
 parser.add_argument("--dataset_type", type=str, help="train/test")
 args = parser.parse_args()
-
 #----------------------------Arguments---------------------------------------
 dataset_type     = args.dataset_type # Change to train/test
 dataset_dir      = './dataset'

@@ -21,6 +21,9 @@ for arg in vars(args):
 print('----------------------------------------')
 
 #----------------------------Arguments---------------------------------------
+# Numpy seed values
+np.random.seed(8964)
+
 dataset_type     = args.dataset_type # Change to train/test
 dataset_dir      = args.dataset_dir
 curated_dataset  = os.path.join(dataset_dir, dataset_type + '_cropped')
@@ -30,6 +33,11 @@ mat_file         = './dataset/%s/digitStruct.mat' % (dataset_type)
 expand_percent   = 30
 img_size         = (args.img_width, args.img_height) # (width, height)
 max_steps        = args.max_steps
+total_data       = 0
+if dataset_type == "train":
+    curated_val_textfile = os.path.join(dataset_dir, 'val.txt')
+    vt = open(curated_val_textfile, 'w')
+    total_val_data = 0
 
 if os.path.exists(curated_dataset) == False:
     os.mkdir(curated_dataset)
@@ -144,6 +152,7 @@ all_data_copy = deepcopy(all_data)
 
 with open(curated_textfile, 'w') as ft:
     for sample_index in range(len(all_data)):
+        random_value = np.random.random()
         try:
             sample_imgph = all_data[sample_index][0]
             sample_image = cv2.imread(file_path+sample_imgph)
@@ -225,9 +234,23 @@ with open(curated_textfile, 'w') as ft:
             new_sample_image_path = os.path.join(curated_dataset, all_data_copy[sample_index][0])
             # Save
             cv2.imwrite(new_sample_image_path, smpl_img_rz)
-            # Write
-            ft.write(str(samples))
-            ft.write('\n')
+
+            if dataset_type == "train":
+                if random_value < 0.1:
+                    # Write to validation
+                    vt.write(str(samples))
+                    vt.write('\n')
+                    total_val_data += 1
+                else:
+                    # Write to train
+                    ft.write(str(samples))
+                    ft.write('\n')
+                    total_data += 1
+            else:
+                # Write
+                ft.write(str(samples))
+                ft.write('\n')
+                total_data += 1
             # Free memory
             del sample_image, sample_image_copy, sample_image_copy_
             #-------------------------------------------------------------------
@@ -238,8 +261,13 @@ with open(curated_textfile, 'w') as ft:
             print('Ignoring data: ', sample_imgph)
 
 #------------------------------------------------------------------------------
-# Close
-ft.close()
 print('Completion..{%d/%d}' % (len(all_data), len(all_data)))
 print('Completed!')
+# Close
+ft.close()
+if dataset_type == "train":
+    vt.close()
+    print('Total validation data = %d' % (total_val_data))
+
+print('Total %s data = %d' % (dataset_type, total_data))
 #------------------------------------------------------------------------------

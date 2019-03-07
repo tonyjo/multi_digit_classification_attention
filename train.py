@@ -124,7 +124,7 @@ def main():
                       dataset_name='train.txt', max_steps=6, mode='Train')
     # Load Model
     model = Model(dim_feature=[196, 128], dim_hidden=128, n_time_step=6,
-                  alpha_c=1.0, image_height=64, image_width=64, mode='train')
+                  alpha_c=0.0, image_height=64, image_width=64, mode='train')
     # Load Trainer
     trainer = Train(model, data, val_data=None, n_epochs=1000, batch_size=64,
                     update_rule='adam', learning_rate=0.0001, print_every=100, save_every=5,
