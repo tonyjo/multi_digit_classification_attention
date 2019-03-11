@@ -17,6 +17,7 @@ class Model(object):
         # Weight Initializer
         self.weight_initializer = tf.contrib.layers.xavier_initializer()
         self.const_initializer  = tf.constant_initializer(0.0)
+        self.trunc_initializer  = tf.initializers.truncated_normal(0.01)
         # Placeholder
         self.images    = tf.placeholder(tf.float32, [None, image_height, image_width, 3])
         self.bboxes    = tf.placeholder(tf.float32,   [None, self.T, 4])
@@ -58,7 +59,7 @@ class Model(object):
 
     def _prediction_layer(self, h, reuse=False):
         with tf.variable_scope('prediction_layer', reuse=reuse):
-            w = tf.get_variable(shape=[self.H, 4], initializer=self.weight_initializer, name='weights')
+            w = tf.get_variable(shape=[self.H, 4], initializer=self.trunc_initializer, name='weights')
             b = tf.get_variable(shape=[4], initializer=self.const_initializer, name='biases')
 
             out_logits = tf.matmul(h, w) + b
