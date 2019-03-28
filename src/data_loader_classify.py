@@ -148,32 +148,66 @@ class dataLoader(object):
             for _ in range(batch_size):
                 sample_data = next(data_gen)
                 sample_img_path = os.path.join(self.directory, self.dataset_dir, sample_data[0])
-                image = cv2.imread(sample_img_path)
-                img_h, img_w, _ = image.shape
-                # Gather sample data for all time steps
-                # Extract ground boxes-- sample_left, sample_top, sample_width, sample_height
-                sample_label  = abs(int(sample_data[1])) * 1.0
-                #print(sample_label)
-                one_hot_label = np.zeros(10) * 0.0
-                if sample_label == 10:
-                    one_hot_label[0] = 1.0
-                else:
-                    one_hot_label[int(sample_label)] = 1.0
-                # Get Bboxes
-                sample_left   = abs(int(sample_data[2]))
-                sample_top    = abs(int(sample_data[3]))
-                sample_width  = abs(int(sample_data[4]))
-                sample_height = abs(int(sample_data[5]))
-                # Sample Random bbox extensions
-                sample_left, sample_top, sample_width, sample_height = self.valid_bbox(sample_left, sample_top, sample_width, sample_height, img_size=(img_h, img_w))
-                # Extract image_patch
-                image_patch = image[sample_top:sample_top+sample_height, sample_left:sample_left+sample_width, :]
-                # Resize
-                image_patch_rz = cv2.resize(image_patch, (self.width, self.height), interpolation = cv2.INTER_LINEAR)
-                # Set image between -1 and 1
-                image_patch_rz = image_patch_rz/127.5 - 1.0
-                # Append to generated batch
-                image_batch.append(image_patch_rz)
-                label_batch.append(one_hot_label)
+                try:
+                    image = cv2.imread(sample_img_path)
+                    img_h, img_w, _ = image.shape
+                    # Gather sample data for all time steps
+                    # Extract ground boxes-- sample_left, sample_top, sample_width, sample_height
+                    sample_label  = abs(int(sample_data[1])) * 1.0
+                    #print(sample_label)
+                    one_hot_label = np.zeros(10) * 0.0
+                    if sample_label == 10:
+                        one_hot_label[0] = 1.0
+                    else:
+                        one_hot_label[int(sample_label)] = 1.0
+                    # Get Bboxes
+                    sample_left   = abs(int(sample_data[2]))
+                    sample_top    = abs(int(sample_data[3]))
+                    sample_width  = abs(int(sample_data[4]))
+                    sample_height = abs(int(sample_data[5]))
+                    # Sample Random bbox extensions
+                    sample_left, sample_top, sample_width, sample_height = self.valid_bbox(sample_left, sample_top, sample_width, sample_height, img_size=(img_h, img_w))
+                    # Extract image_patch
+                    image_patch = image[sample_top:sample_top+sample_height, sample_left:sample_left+sample_width, :]
+                    # Resize
+                    image_patch_rz = cv2.resize(image_patch, (self.width, self.height), interpolation = cv2.INTER_LINEAR)
+                    # Set image between -1 and 1
+                    image_patch_rz = image_patch_rz/127.5 - 1.0
+                    # Append to generated batch
+                    image_batch.append(image_patch_rz)
+                    label_batch.append(one_hot_label)
+
+                except cv2.error as e:
+                    print('File error at: ', sample_img_path, ' resampling..')
+                    sample_data = next(data_gen)
+                    sample_img_path = os.path.join(self.directory, self.dataset_dir, sample_data[0])
+
+                    image = cv2.imread(sample_img_path)
+                    img_h, img_w, _ = image.shape
+                    # Gather sample data for all time steps
+                    # Extract ground boxes-- sample_left, sample_top, sample_width, sample_height
+                    sample_label  = abs(int(sample_data[1])) * 1.0
+                    #print(sample_label)
+                    one_hot_label = np.zeros(10) * 0.0
+                    if sample_label == 10:
+                        one_hot_label[0] = 1.0
+                    else:
+                        one_hot_label[int(sample_label)] = 1.0
+                    # Get Bboxes
+                    sample_left   = abs(int(sample_data[2]))
+                    sample_top    = abs(int(sample_data[3]))
+                    sample_width  = abs(int(sample_data[4]))
+                    sample_height = abs(int(sample_data[5]))
+                    # Sample Random bbox extensions
+                    sample_left, sample_top, sample_width, sample_height = self.valid_bbox(sample_left, sample_top, sample_width, sample_height, img_size=(img_h, img_w))
+                    # Extract image_patch
+                    image_patch = image[sample_top:sample_top+sample_height, sample_left:sample_left+sample_width, :]
+                    # Resize
+                    image_patch_rz = cv2.resize(image_patch, (self.width, self.height), interpolation = cv2.INTER_LINEAR)
+                    # Set image between -1 and 1
+                    image_patch_rz = image_patch_rz/127.5 - 1.0
+                    # Append to generated batch
+                    image_batch.append(image_patch_rz)
+                    label_batch.append(one_hot_label)
 
             yield np.array(image_batch), np.array(label_batch)
