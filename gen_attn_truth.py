@@ -6,7 +6,7 @@ import numpy as np
 import argparse
 
 parser = argparse.ArgumentParser()
-parser.add_argument("--dataset_type", type=str, help="train/test")
+parser.add_argument("--dataset_type", type=str, help="extra/train/val/test")
 args = parser.parse_args()
 #----------------------------Arguments---------------------------------------
 dataset_type     = args.dataset_type # Change to train/test

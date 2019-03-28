@@ -119,8 +119,8 @@ class Train(object):
 #-------------------------------------------------------------------------------
 def main():
     # Load train dataset
-    data = dataLoader(directory='./dataset', dataset_dir='train_cropped',
-                      height=24, width=24, dataset_name='train.txt',
+    data = dataLoader(directory='./dataset', dataset_dir='extra_cropped',
+                      height=24, width=24, dataset_name='extra.txt',
                       max_steps=6, mode='Train')
     # Load Model
     model = Model(image_height=24, image_width=24, l2=0.0005, mode='train')
@@ -128,7 +128,7 @@ def main():
     # Load Trainer
     trainer = Train(model, data, val_data=None, n_epochs=400, batch_size=64,
                     update_rule='adam', learning_rate=0.0001, print_every=500, save_every=5,
-                    pretrained_model=None, model_path='model/clsfy3/', log_path='log_clsfy3/')
+                    pretrained_model=None, model_path='model/clsfy4/', log_path='log_clsfy4/')
 
     # Begin Training
     trainer.train()

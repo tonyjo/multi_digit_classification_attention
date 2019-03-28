@@ -34,6 +34,7 @@ expand_percent   = 30
 img_size         = (args.img_width, args.img_height) # (width, height)
 max_steps        = args.max_steps
 total_data       = 0
+
 if dataset_type == "train":
     curated_val_textfile = os.path.join(dataset_dir, 'val.txt')
     vt = open(curated_val_textfile, 'w')
