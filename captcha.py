@@ -73,17 +73,6 @@ class ImageCaptcha(object):
         Draw(image).arc(points, start, end, fill=color)
         return image
 
-    @staticmethod
-    def create_noise_dots(image, color, width=3, number=30):
-        draw = Draw(image)
-        w, h = image.size
-        while number:
-            x1 = random.randint(0, w)
-            y1 = random.randint(0, h)
-            draw.line(((x1, y1), (x1 - 1, y1 - 1)), fill=color, width=width)
-            number -= 1
-        return image
-
     def create_captcha_image(self, chars, color, background):
         """Create the CAPTCHA image itself.
         :param chars: text to be generated.
@@ -98,7 +87,7 @@ class ImageCaptcha(object):
             font = random.choice(self.truefonts)
             w, h = draw.textsize(c, font=font)
             self._width = w + 5
-            self._height = 70
+            self._height = random.randint(50, 70)
 
             dx = 0
             dy = 0
@@ -154,14 +143,15 @@ class ImageCaptcha(object):
 
         return image
 
-    def generate_image(self, chars, color):
+    def generate_image(self, chars):
         """Generate the image of the given characters.
         :param chars: text to be generated.
         """
         background = (255, 255, 255)
-        color1 = random_color(10, 200, random.randint(220, 255))
-        im = self.create_captcha_image(chars, color1, background)
-        self.create_noise_dots(im, color)
+        color = random_color(10, 200, random.randint(220, 255))
+        im = self.create_captcha_image(chars, color, background)
         self.create_noise_curve(im, color)
         im = im.filter(ImageFilter.SMOOTH)
+
         return im
+
