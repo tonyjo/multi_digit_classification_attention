@@ -67,15 +67,13 @@ class ImageCaptcha(object):
         :param background: color of the background.
         The color should be a tuple of 3 numbers, such as (0, 255, 255).
         """
-        image = Image.new('RGB', (self._width, self._height), background)
-        draw = Draw(image)
-
         def _draw_character(c):
+            image = Image.new('RGB', (self._width, self._height), background)
+            draw  = Draw(image)
             font = random.choice(self.truefonts)
             w, h = draw.textsize(c, font=font)
-            self._width = w + 5
-            self._height = random.randint(50, 70)
-
+            w = random.randint(w-10, w)
+            h = random.randint(h-5, h+1)
             dx = 0
             dy = 0
             im = Image.new('RGBA', (w , h))
@@ -85,48 +83,16 @@ class ImageCaptcha(object):
             im = im.crop(im.getbbox())
             im = im.rotate(random.uniform(-30, 30), Image.BILINEAR, expand=1)
 
-            # warp
-            dx = w * random.uniform(0.1, 0.3)
-            dy = h * random.uniform(0.2, 0.3)
-            x1 = int(random.uniform(-dx, dx))
-            y1 = int(random.uniform(-dy, dy))
-            x2 = int(random.uniform(-dx, dx))
-            y2 = int(random.uniform(-dy, dy))
-            w2 = w + abs(x1) + abs(x2)
-            h2 = h + abs(y1) + abs(y2)
-            data = (
-                x1, y1,
-                -x1, h2 - y2,
-                w2 + x2, h2 + y2,
-                w2 - x2, -y1,
-            )
-            im = im.resize((w2, h2))
-            im = im.transform((w, h), Image.QUAD, data)
-            return im
+            return im, w, h
 
-        images = []
-        for c in chars:
-            if random.random() > 0.5:
-                images.append(_draw_character(" "))
-            images.append(_draw_character(c))
+        im, width, height = _draw_character(chars)
+        img   = im.convert('L').point(table)
+        image = Image.new('RGB', (width, height), background)
+        draw  = Draw(image)
+        image.paste(im, (0, 0), img)
 
-        text_width = self._width
-
-        width = max(text_width, self._width)
-        image = image.resize((width, self._height))
-
-        average = int(text_width / len(chars))
-        rand = int(0.25 * average)
-        offset = 0
-
-        for im in images:
-            w, h = im.size
-            mask = im.convert('L').point(table)
-            image.paste(im, (offset, int((self._height - h) / 2)), mask)
-            #offset = offset + w + random.randint(-rand, 0)
-
-        if width > self._width:
-            image = image.resize((self._width, self._height))
+        #if width > self._width:
+        #    image = image.resize((self._width, self._height), resample=PIL.Image.LANCZOS)
 
         return image
 
@@ -140,4 +106,3 @@ class ImageCaptcha(object):
         im = im.filter(ImageFilter.SMOOTH)
 
         return im
-
