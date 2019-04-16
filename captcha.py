@@ -72,8 +72,6 @@ class ImageCaptcha(object):
             draw  = Draw(image)
             font = random.choice(self.truefonts)
             w, h = draw.textsize(c, font=font)
-            w = random.randint(w-10, w)
-            h = random.randint(h-5, h+1)
             dx = 0
             dy = 0
             im = Image.new('RGBA', (w , h))
@@ -86,13 +84,11 @@ class ImageCaptcha(object):
             return im, w, h
 
         im, width, height = _draw_character(chars)
+        w1, h1 = im.size
         img   = im.convert('L').point(table)
-        image = Image.new('RGB', (width, height), background)
+        image = Image.new('RGB', (w1, h1), background)
         draw  = Draw(image)
         image.paste(im, (0, 0), img)
-
-        #if width > self._width:
-        #    image = image.resize((self._width, self._height), resample=PIL.Image.LANCZOS)
 
         return image
 
@@ -106,3 +102,4 @@ class ImageCaptcha(object):
         im = im.filter(ImageFilter.SMOOTH)
 
         return im
+
