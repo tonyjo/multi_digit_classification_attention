@@ -8,7 +8,7 @@ from PIL.ImageDraw import Draw
 from captcha import ImageCaptcha
 from captcha import random_color
 # Seed
-np.random.seed(8964)
+#np.random.seed(8964)
 #--------------------------------Functions--------------------------------------
 # Random dots generator
 def create_noise_dots(image, color, width=2, number=125):
@@ -54,11 +54,12 @@ for i in range(len(nm)):
 count = 0
 max_chars = 6
 train_set = []
-dump_train_file = './datasets/captcha/train.txt'
+dump_train_file = './dataset/captcha/train.txt'
 
 # Atleast have all characters appear once in trainset-- generate 100 for each
 for select in all_selections:
-    for _ in range(1000):
+    counter1 = 0
+    while counter1 < 500:
         all_data = []
         all_lbls = []
         # Randomly generate a placeholder to put in the char
@@ -120,18 +121,23 @@ for select in all_selections:
             # Convert to numpy array
             canvas = np.array(im)
             # Save image
-            cv2.imwrite('./datasets/captcha/%d.png' % count, canvas)
+            cv2.imwrite('./dataset/captcha/train/%d.png' % count, canvas)
             # Increment
             count += 1
             # Progress
-            if count%1000 == 0:
+            if count%500 == 0:
                 print('Creating training set --Progress: ', count)
+            #-------------------------------------------------------------------
+            counter1 += 1
         except ValueError:
             print('Skipping......')
             continue
+    #---------------------------------------------------------------------------
 
 # Create random data afterwards
-for _ in range(1400):
+counter1 = 0
+
+while counter1 < 9000:
     all_data = []
     all_lbls = []
     # Generate numbers
@@ -187,12 +193,14 @@ for _ in range(1400):
         # Convert to numpy array
         canvas = np.array(im)
         # Save image
-        cv2.imwrite('./datasets/captcha/%d.png' % count, canvas)
+        cv2.imwrite('./dataset/captcha/train/%d.png' % count, canvas)
         # Increment
         count += 1
         # Progress
-        if count%1000 == 0:
-            print('Creating training set --Progress: ', count)
+        if count%500 == 0:
+            print('Creating Validation set --Progress: ', count)
+        #-------------------------------------------------------------------
+        counter1 += 1
     except ValueError:
         print('Skipping......')
         continue
@@ -211,9 +219,12 @@ f.close()
 del train_set
 #-------------------------------------------------------------------------------
 valid_set = []
-dump_valid_file = './datasets/captcha/val.txt'
+dump_valid_file = './dataset/captcha/val.txt'
+counter1 = 0
 # Create random data afterwards
-for _ in range(1500):
+counter1 = 0
+
+while counter1 < 15000:
     all_data = []
     all_lbls = []
     # Generate numbers
@@ -256,7 +267,7 @@ for _ in range(1500):
             canvas[10:10+h, prev_w+2:prev_w+2+w, :] = pix
             prev_w += w
         # Append to training set
-        train_set.append([all_lbls, all_bbox])
+        valid_set.append([all_lbls, all_bbox])
         # Convert to PIL Image
         im = Image.fromarray(canvas)
         # Generate different colored dots
@@ -269,31 +280,38 @@ for _ in range(1500):
         # Convert to numpy array
         canvas = np.array(im)
         # Save image
-        cv2.imwrite('./datasets/captcha/%d.png' % count, canvas)
+        cv2.imwrite('./dataset/captcha/val/%d.png' % count, canvas)
         # Increment
         count += 1
         # Progress
         if count%1000 == 0:
             print('Creating validation set --Progress: ', count)
+        #-------------------------------------------------------------------
+        counter1 += 1
     except ValueError:
         print('Skipping......')
         continue
 print('Validation Set Completed ',  len(valid_set), ' ', count)
 
-with open(dump_val_file, 'w') as f:
-    for q in range(len(train_set)):
-        all_data_interm, all_bbox_interm = train_set[q]
+with open(dump_valid_file, 'w') as f:
+    for q in range(len(valid_set)):
+        all_data_interm, all_bbox_interm = valid_set[q]
         for t in range(max_chars):
             char_i = all_data_interm[t]
             w1, h1, w2, h2 =  all_bbox_interm[t]
             f.write('%d.png, %s, %d, %d, %d, %d\n' % (q, char_i, w1, h1, w2, h2))
 f.close()
+
+# Free memory
+del valid_set
 #-------------------------------------------------------------------------------
 
 test_set = []
-dump_test_file = './datasets/captcha/test.txt'
+dump_test_file = './dataset/captcha/test.txt'
 # Create random data afterwards
-for _ in range(1500):
+counter1 = 0
+
+while counter1 < 15000:
     all_data = []
     all_lbls = []
     # Generate numbers
@@ -336,7 +354,7 @@ for _ in range(1500):
             canvas[10:10+h, prev_w+2:prev_w+2+w, :] = pix
             prev_w += w
         # Append to training set
-        train_set.append([all_lbls, all_bbox])
+        test_set.append([all_lbls, all_bbox])
         # Convert to PIL Image
         im = Image.fromarray(canvas)
         # Generate different colored dots
@@ -349,23 +367,28 @@ for _ in range(1500):
         # Convert to numpy array
         canvas = np.array(im)
         # Save image
-        cv2.imwrite('./datasets/captcha/%d.png' % count, canvas)
+        cv2.imwrite('./dataset/captcha/test/%d.png' % count, canvas)
         # Increment
         count += 1
         # Progress
         if count%500 == 0:
             print('Creating testing set --Progress: ', count)
+        #-------------------------------------------------------------------
+        counter1 += 1
     except ValueError:
         print('Skipping......')
         continue
 print('Testing Set Completed ',  len(test_set), ' ', count)
 
 with open(dump_test_file, 'w') as f:
-    for q in range(len(train_set)):
-        all_data_interm, all_bbox_interm = train_set[q]
+    for q in range(len(test_set)):
+        all_data_interm, all_bbox_interm = test_set[q]
         for t in range(max_chars):
             char_i = all_data_interm[t]
             w1, h1, w2, h2 =  all_bbox_interm[t]
             f.write('%d.png, %s, %d, %d, %d, %d\n' % (q, char_i, w1, h1, w2, h2))
 f.close()
+
+# Free memory
+del test_set
 #-------------------------------------------------------------------------------
