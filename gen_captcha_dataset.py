@@ -278,7 +278,7 @@ for _ in range(1500):
     except ValueError:
         print('Skipping......')
         continue
-print('Training Set Completed ',  len(valid_set), ' ', count)
+print('Validation Set Completed ',  len(valid_set), ' ', count)
 
 with open(dump_val_file, 'w') as f:
     for q in range(len(train_set)):
