@@ -173,9 +173,9 @@ class dataLoader(object):
                 image           = cv2.imread(sample_img_path)
                 org_img_hgth, org_img_wdth, _ = image.shape
                 image           = cv2.resize(image, (self.image_width, self.image_height))
-                image_norm      = deepcopy(image)
+                # image_norm      = deepcopy(image)
                 # Set image between -1 and 1
-                image_norm = image_norm /127.5 - 1.0
+                image_norm = image /127.5 - 1.0
                 # Gather sample data for all time steps
                 all_sample_data = []
                 all_sample_attn = []
@@ -216,18 +216,19 @@ class dataLoader(object):
                             # Generate mask
                             attn_mask   = self.generate_ground_gaussian_attention_mask(ground_attention_size,\
                                                          sple_top, sple_heigth, sple_left, sple_width)
-                            attn_mask = attn_mask.flatten()
                     # Collect
+                    attn_mask = attn_mask.flatten()
                     all_sample_attn.append(attn_mask)
                     all_sample_data.append([sample_left, sample_top, sample_width, sample_height])
                 # Append to generated batch
-                image_batch.append(image)
+                # image_batch.append(image)
                 image_batch_norm.append(image_norm)
                 grd_bboxes_batch.append(all_sample_data)
                 if self.grd_attn == True:
                     grd_attnMk_batch.append(all_sample_attn)
 
             if self.grd_attn == True:
-                yield np.array(image_batch), np.array(image_batch_norm), np.array(grd_bboxes_batch), np.array(grd_attnMk_batch)
+                #yield np.array(image_batch), np.array(image_batch_norm), np.array(grd_bboxes_batch), np.array(grd_attnMk_batch)
+                yield np.array(image_batch_norm), np.array(grd_bboxes_batch), np.array(grd_attnMk_batch)
             else:
-                yield np.array(image_batch), np.array(image_batch_norm), np.array(grd_bboxes_batch)
+                yield np.array(image_batch_norm), np.array(grd_bboxes_batch)

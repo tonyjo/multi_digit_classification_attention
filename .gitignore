@@ -1,4 +1,5 @@
 *.pyc
+dataset/*
 dataset/train
 dataset/train_curated
 dataset/test
