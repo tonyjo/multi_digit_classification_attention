@@ -115,7 +115,7 @@ def attn_cnn(images, mode='train'):
                             weights_initializer=tf.contrib.layers.variance_scaling_initializer(mode='FAN_IN'),
                             stride=1, scope='layer_8')
         layer_8 = _batch_norm(layer_8, mode=mode, name='layer_8')
-        print(layer_8.get_shape())
+        # print(layer_8.get_shape())
 
         return layer_8
 

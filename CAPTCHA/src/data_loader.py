@@ -77,7 +77,7 @@ class dataLoader(object):
         and scales to fit into the box.
         """
         sample_image_height, sample_image_width = sample_size
-        scales = np.sqrt(2) * 5 # Play with the standard deviation
+        scales = np.sqrt(2) * 10 # Play with the standard deviation
 
         # Check size:
         if sample_left + sample_width >= sample_image_width:

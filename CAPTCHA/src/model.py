@@ -97,15 +97,6 @@ class Model(object):
             final_loss += tf.reduce_sum(interm_loss)
 
         if self.alpha_c > 0:
-            ## Pixel classification loss
-            # alpha_loss = 0.0
-            # for T in range(self.T):
-            #     pred_alpha = alpha_list[T] # (N, L)
-            #     pred_alpha = tf.reshape(pred_alpha, shape=[-1, self.H_attn, self.W_attn, 1]) # (N, 7, 7, 1)
-            #     grnd_alpha = self.gnd_attn[:, T, :, :, :] # (N, 7, 7, 1)
-            #     eror_alpha = tf.nn.softmax_cross_entropy_with_logits(labels=grnd_alpha, logits=pred_alpha) # (N,)
-            #     alpha_loss += tf.reduce_sum(eror_alpha) # (1)
-
             ## KL-loss
             alpha_loss = 0.0
             for T in range(self.T):

@@ -1,7 +1,7 @@
 from __future__ import print_function
 import os
 os.environ["CUDA_DEVICE_ORDER"]="PCI_BUS_ID"
-os.environ["CUDA_VISIBLE_DEVICES"]="1"
+os.environ["CUDA_VISIBLE_DEVICES"]="0"
 import time
 import numpy as np
 import tensorflow as tf
@@ -47,84 +47,85 @@ class Train(object):
         # Build model with loss
         loss = self.model.build_model()
 
-        # # Global step
-        # global_step = tf.Variable(0, dtype=tf.int32, trainable=False)
-        #
-        # # Train op
-        # with tf.name_scope('optimizer'):
-        #     decay_l_rate = tf.train.exponential_decay(self.learning_rate, global_step,\
-        #                                                50000, 0.9, staircase=True)
-        #     incr_glbl_stp = tf.assign(global_step, global_step+1)
-        #     optimizer = self.optimizer(learning_rate=decay_l_rate)
-        #     grads = tf.gradients(loss, tf.trainable_variables())
-        #     grads_and_vars = list(zip(grads, tf.trainable_variables()))
-        #     train_op = optimizer.apply_gradients(grads_and_vars=grads_and_vars)
-        #
-        # # Summary op
-        # tf.summary.scalar('batch_loss', loss)
-        #
-        # summary_op = tf.summary.merge_all()
-        #
-        # print("The number of epoch: %d" %self.n_epochs)
-        # print("Data size: %d" %n_examples)
-        # print("Batch size: %d" %self.batch_size)
-        # print("Iterations per epoch: %d" %n_iters_per_epoch)
-        #
-        # # Set GPU options
-        # config = tf.GPUOptions(allow_growth=True)
-        #
-        # with tf.Session(config=tf.ConfigProto(gpu_options=config)) as sess:
-        #     # Intialize the training graph
-        #     sess.run(tf.global_variables_initializer())
-        #     # Tensorboard summary path
-        #     summary_writer = tf.summary.FileWriter(self.log_path, graph=sess.graph)
-        #     saver = tf.train.Saver(max_to_keep=2)
-        #
-        #     if self.pretrained_model is not None:
-        #         print("Start training with pretrained Model..")
-        #         saver.restore(sess, self.pretrained_model)
-        #
-        #     prev_loss = -1
-        #     for e in range(self.n_epochs):
-        #         curr_loss = 0
-        #         start_t   = time.time()
-        #         for i in range(n_iters_per_epoch):
-        #             _, image_batch, grd_bboxes_batch, grd_attn_batch = next(train_loader)
-        #             feed_dict = {self.model.images: image_batch,
-        #                          self.model.bboxes: grd_bboxes_batch,
-        #                          self.model.gnd_attn: grd_attn_batch,
-        #                          self.model.drop_prob: 0.5}
-        #
-        #             _, l, _ = sess.run([train_op, loss, incr_glbl_stp], feed_dict)
-        #             curr_loss += l
-        #
-        #             if i%self.print_every == 0:
-        #                 print('Epoch Completion..{%d/%d}' % (i, n_iters_per_epoch))
-        #
-        #             # write summary for tensorboard visualization
-        #             if i % 10 == 0:
-        #                 summary = sess.run(summary_op, feed_dict)
-        #                 summary_writer.add_summary(summary, e*n_iters_per_epoch + i)
-        #
-        #         print("Previous epoch loss: ", prev_loss)
-        #         print("Current epoch loss: ", curr_loss)
-        #         print("Elapsed time: ", time.time() - start_t)
-        #         prev_loss = curr_loss
-        #
-        #         # Save model's parameters
-        #         if (e+1) % self.save_every == 0:
-        #             saver.save(sess, os.path.join(self.model_path, 'model'), global_step=e+1)
-        #             print("model-%s saved." %(e+1))
-        # # Close session
-        # sess.close()
+        # Global step
+        global_step = tf.Variable(0, dtype=tf.int32, trainable=False)
+
+        # Train op
+        with tf.name_scope('optimizer'):
+            decay_l_rate = tf.train.exponential_decay(self.learning_rate, global_step,\
+                                                       50000, 0.9, staircase=True)
+            incr_glbl_stp = tf.assign(global_step, global_step+1)
+            optimizer = self.optimizer(learning_rate=decay_l_rate)
+            grads     = tf.gradients(loss, tf.trainable_variables())
+            grads_and_vars = list(zip(grads, tf.trainable_variables()))
+            train_op = optimizer.apply_gradients(grads_and_vars=grads_and_vars)
+
+        # Summary op
+        tf.summary.scalar('batch_loss', loss)
+
+        summary_op = tf.summary.merge_all()
+
+        print("The number of epoch: %d" %self.n_epochs)
+        print("Data size: %d" %n_examples)
+        print("Batch size: %d" %self.batch_size)
+        print("Iterations per epoch: %d" %n_iters_per_epoch)
+
+        # Set GPU options
+        config = tf.GPUOptions(allow_growth=True)
+
+        with tf.Session(config=tf.ConfigProto(gpu_options=config)) as sess:
+            # Intialize the training graph
+            sess.run(tf.global_variables_initializer())
+            # Tensorboard summary path
+            summary_writer = tf.summary.FileWriter(self.log_path, graph=sess.graph)
+            saver = tf.train.Saver(max_to_keep=2)
+
+            if self.pretrained_model is not None:
+                print("Start training with pretrained Model..")
+                saver.restore(sess, self.pretrained_model)
+
+            prev_loss = -1
+            for e in range(self.n_epochs):
+                curr_loss = 0
+                start_t   = time.time()
+                for i in range(n_iters_per_epoch):
+                    _, image_batch, grd_bboxes_batch, grd_attn_batch = next(train_loader)
+                    feed_dict = {self.model.images: image_batch,
+                                 self.model.bboxes: grd_bboxes_batch,
+                                 self.model.gnd_attn: grd_attn_batch,
+                                 self.model.drop_prob: 0.5}
+
+                    _, l, _ = sess.run([train_op, loss, incr_glbl_stp], feed_dict)
+                    curr_loss += l
+
+                    if i%self.print_every == 0:
+                        print('Epoch Completion..{%d/%d}' % (i, n_iters_per_epoch))
+
+                    # write summary for tensorboard visualization
+                    if i % 10 == 0:
+                        summary = sess.run(summary_op, feed_dict)
+                        summary_writer.add_summary(summary, e*n_iters_per_epoch + i)
+
+                print("Previous epoch loss: ", prev_loss)
+                print("Current epoch loss: ", curr_loss)
+                print("Elapsed time: ", time.time() - start_t)
+                prev_loss = curr_loss
+
+                # Save model's parameters
+                if (e+1) % self.save_every == 0:
+                    saver.save(sess, os.path.join(self.model_path, 'model'), global_step=e+1)
+                    print("model-%s saved." %(e+1))
+        # Close session
+        sess.close()
 #-------------------------------------------------------------------------------
 def main():
     # Load train dataset
-    data = dataLoader(directory='./dataset/captcha', dataset_dir='train',
-                      dataset_name='train.txt', max_steps=6, grd_attn=False, mode='train')
+    data = dataLoader(directory='./dataset/captcha', dataset_dir='train',\
+                      dataset_name='train.txt', max_steps=6, image_width=200,\
+                      image_height=64, grd_attn=True, mode='train')
     # Load Model
-    model = Model(dim_feature=[1188, 128], dim_hidden=128, n_time_step=8,
-                  alpha_c=0.0, image_height=80, image_width=270, mode='train')
+    model = Model(dim_feature=[672, 128], dim_hidden=128, n_time_step=8,
+                  alpha_c=1.0, image_height=64, image_width=200, mode='train')
     # Load Trainer
     trainer = Train(model, data, val_data=None, n_epochs=1000, batch_size=64,
                     update_rule='adam', learning_rate=0.0001, print_every=100, save_every=5,
