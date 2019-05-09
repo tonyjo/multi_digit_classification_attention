@@ -127,6 +127,8 @@ class dataLoader(object):
                         # Resize
                         image_patch_rz = cv2.resize(image_patch, (self.width, self.height),\
                                                     interpolation = cv2.INTER_LINEAR)
+                        # Data Augmentation
+                        image_patch_rz = self.randomFlip(image_patch_rz)
                         # Set image patch between -1 and 1
                         image_patch_rz = image_patch_rz/127.5 - 1.0
                         # Append to generated batch
