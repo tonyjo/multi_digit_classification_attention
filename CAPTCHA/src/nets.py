@@ -197,6 +197,7 @@ def classification_network(images, dropout, mode='train'):
 
     return logits
 
+#-------------------------Baseline-CNN------------------------------------
 def base_classification_network(images, dropout, mode='train'):
     with tf.variable_scope('classification_CNN'):
         layer_1 = slim.conv2d(images, 128, [5, 5],
@@ -291,3 +292,4 @@ def base_classification_network(images, dropout, mode='train'):
                                                     activation_fn=None)
 
     return logits
+
