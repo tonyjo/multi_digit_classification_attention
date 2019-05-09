@@ -140,7 +140,7 @@ def classification_network(images, dropout, mode='train'):
         layer_2 = tf.nn.leaky_relu(layer_2, name='relu_layer_2')
         #print(layer_2.get_shape())
 
-        layer_3 = slim.conv2d(layer_2, 128, [3, 3],
+        layer_3 = slim.conv2d(layer_2, 128, [5, 5],
                             activation_fn=None,
                             padding='SAME',
                             weights_initializer=tf.contrib.layers.variance_scaling_initializer(mode='FAN_IN'),
@@ -149,7 +149,7 @@ def classification_network(images, dropout, mode='train'):
         layer_3 = tf.nn.leaky_relu(layer_3, name='relu_layer_3')
         #print(layer_3.get_shape())
 
-        layer_4 = slim.conv2d(layer_3, 256, [3, 3],
+        layer_4 = slim.conv2d(layer_3, 256, [5, 5],
                             activation_fn=None,
                             padding='VALID',
                             weights_initializer=tf.contrib.layers.variance_scaling_initializer(mode='FAN_IN'),
@@ -158,7 +158,7 @@ def classification_network(images, dropout, mode='train'):
         layer_4 = tf.nn.leaky_relu(layer_4, name='relu_layer_4')
         #print(layer_4.get_shape())
 
-        layer_5 = slim.conv2d(layer_4, 256, [3, 3],
+        layer_5 = slim.conv2d(layer_4, 256, [5, 5],
                             activation_fn=None,
                             padding='VALID',
                             weights_initializer=tf.contrib.layers.variance_scaling_initializer(mode='FAN_IN'),
@@ -174,7 +174,7 @@ def classification_network(images, dropout, mode='train'):
                             stride=1, scope='layer_6')
         layer_6 = _batch_norm(layer_6, mode=mode, name='layer_6')
         layer_6 = tf.nn.leaky_relu(layer_6, name='relu_layer_6')
-        #print(layer_6.get_shape())
+        print(layer_6.get_shape())
 
     with tf.variable_scope('classification_Fully_Connected'):
         # Flatten
@@ -191,9 +191,6 @@ def classification_network(images, dropout, mode='train'):
         layer_8 = _batch_norm(layer_8, mode=mode, name='layer_8')
         layer_8 = tf.nn.leaky_relu(layer_8,  name='relu_layer_8')
         layer_8 = tf.nn.dropout(layer_8, keep_prob=dropout)
-        # Classification layer
-        logits  = tf.contrib.layers.fully_connected(layer_8, 10,
-                         activation_fn=None, scope='layer_clsfy')
 
     return logits
 
@@ -292,4 +289,3 @@ def base_classification_network(images, dropout, mode='train'):
                                                     activation_fn=None)
 
     return logits
-
