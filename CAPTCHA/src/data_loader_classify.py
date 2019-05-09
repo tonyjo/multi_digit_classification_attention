@@ -48,7 +48,7 @@ class dataLoader(object):
                 frame = frames[i+u]
                 path, label, w1, h1, w2, h2 = frame.split(', ')
                 h2 = h2[:-1] # Remove /n at the end
-                label_num = all_selections.index(label)
+                label_num = all_selections.index(label) # Convert to label category
                 all_data.append([path, int(label_num), int(w1), int(h1), int(w2), int(h2)])
 
         self.all_data = all_data
@@ -125,10 +125,10 @@ class dataLoader(object):
                         image_patch = image[int(sample_top):int(sample_top+sample_height),\
                                             int(sample_left):int(sample_left+sample_width), :]
                         # Resize
-                        image_patch_rz = cv2.resize(image_patch, (self.width, self.height),\
+                        image_patch_rz = cv2.resize(image_patch, (self.image_patch_width, self.image_patch_height),\
                                                     interpolation = cv2.INTER_LINEAR)
                         # Data Augmentation
-                        image_patch_rz = self.randomFlip(image_patch_rz)
+                        # image_patch_rz = self.randomFlip(image_patch_rz)
                         # Set image patch between -1 and 1
                         image_patch_rz = image_patch_rz/127.5 - 1.0
                         # Append to generated batch
