@@ -152,6 +152,7 @@ class dataLoader(object):
 
     def gen_data_batch(self, batch_size):
         ground_attention_size = (14, 48) # (height, width)
+        # Pre-generate start and stop state attention mask
         if self.grd_attn == True:
             start_attn_mask = self.generate_start_attention_mask(attn_size=ground_attention_size)
             stop_attn_mask  = self.generate_stop_attention_mask(attn_size=ground_attention_size)
