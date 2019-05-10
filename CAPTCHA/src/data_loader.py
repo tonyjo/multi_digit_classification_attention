@@ -33,6 +33,9 @@ class dataLoader(object):
                 frame = frames[i+u]
                 path, label, w1, h1, w2, h2 = frame.split(', ')
                 h2 = h2[:-1] # Remove /n at the end
+                if self.mode == 'test':
+                    path = int(path[0:-4]) + 55000
+                    path = str(path) + '.png'
                 interm_data.append([path, label, int(w1), int(h1), int(w2), int(h2)])
 
             final_data = []
@@ -217,8 +220,9 @@ class dataLoader(object):
                             attn_mask   = self.generate_ground_gaussian_attention_mask(ground_attention_size,\
                                                          sple_top, sple_heigth, sple_left, sple_width)
                     # Collect
-                    attn_mask = attn_mask.flatten()
-                    all_sample_attn.append(attn_mask)
+                    if self.grd_attn == True:
+                        attn_mask = attn_mask.flatten()
+                        all_sample_attn.append(attn_mask)
                     all_sample_data.append([sample_left, sample_top, sample_width, sample_height])
                 # Append to generated batch
                 # image_batch.append(image)

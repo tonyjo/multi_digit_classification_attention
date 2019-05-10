@@ -138,14 +138,13 @@ class Model(object):
         for t in range(self.T):
             # Attention
             context, alpha = self._attention_layer(features, h, reuse=(t!=0))
-            alpha = tf.reshape(alpha, shape=[-1, self.H_attn, self.W_attn, 1])
             alpha_list.append(alpha)
             # LSTM step
             with tf.variable_scope('lstm', reuse=(t!=0)):
                 _, (c, h) = lstm_cell(inputs=context, state=[c, h])
             # Prediction
             logits = self._prediction_layer(h, reuse=(t!=0))
-            # Collect Predictions
+            # Collect
             pred_bboxs.append(logits)
 
         return pred_bboxs, alpha_list

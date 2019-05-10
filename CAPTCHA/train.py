@@ -122,10 +122,10 @@ def main():
     # Load train dataset
     data = dataLoader(directory='./dataset/captcha', dataset_dir='train',\
                       dataset_name='train.txt', max_steps=6, image_width=200,\
-                      image_height=64, grd_attn=True, mode='train')
+                      image_height=64, grd_attn=True, mode='Train')
     # Load Model
     model = Model(dim_feature=[672, 128], dim_hidden=128, n_time_step=8,
-                  alpha_c=1.0, image_height=64, image_width=200, mode='Train')
+                  alpha_c=1.0, image_height=64, image_width=200, mode='train')
     # Load Trainer
     trainer = Train(model, data, val_data=None, n_epochs=1000, batch_size=64,
                     update_rule='adam', learning_rate=0.0001, print_every=100, save_every=5,
