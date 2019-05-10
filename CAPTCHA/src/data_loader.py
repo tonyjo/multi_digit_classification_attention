@@ -179,6 +179,8 @@ class dataLoader(object):
                 image           = cv2.imread(sample_img_path)
                 org_img_hgth, org_img_wdth, _ = image.shape
                 image           = cv2.resize(image, (self.image_width, self.image_height))
+                if self.mode != 'Train':
+                    image_batch.append(image)
                 # image_norm      = deepcopy(image)
                 # Set image between -1 and 1
                 image_norm = image /127.5 - 1.0
@@ -238,4 +240,4 @@ class dataLoader(object):
                 #yield np.array(image_batch), np.array(image_batch_norm), np.array(grd_bboxes_batch), np.array(grd_attnMk_batch)
                 yield np.array(image_batch_norm), np.array(grd_bboxes_batch), np.array(grd_attnMk_batch)
             else:
-                yield np.array(image_batch_norm), np.array(grd_bboxes_batch)
+                yield np.array(image_batch), np.array(image_batch_norm), np.array(grd_bboxes_batch)
