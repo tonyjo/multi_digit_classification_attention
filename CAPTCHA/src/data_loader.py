@@ -16,7 +16,6 @@ class dataLoader(object):
         self.directory    = directory
         self.dataset_dir  = dataset_dir
         self.dataset_name = dataset_name
-        self.attn_grd_dir = dataset_name[:-4] + '_attn_grnd'
         self.load_data()
 
     def load_data(self):
@@ -156,6 +155,10 @@ class dataLoader(object):
 
     def gen_data_batch(self, batch_size):
         ground_attention_size = (14, 48) # (height, width)
+        # Pre-generate start and stop state attention mask
+        if self.grd_attn == True:
+            start_attn_mask = self.generate_start_attention_mask(attn_size=ground_attention_size)
+            stop_attn_mask  = self.generate_stop_attention_mask(attn_size=ground_attention_size)
         # Generate data based on training/validation
         if self.mode == 'Train':
             # Randomize data
@@ -190,7 +193,7 @@ class dataLoader(object):
                         sample_width  = 1.0
                         sample_height = 1.0
                         if self.grd_attn == True:
-                            attn_mask = self.generate_start_attention_mask(attn_size=ground_attention_size)
+                            attn_mask = start_attn_mask
                     # End State
                     elif idx == (self.max_steps+1):
                         sample_left   = 0.0
@@ -198,7 +201,7 @@ class dataLoader(object):
                         sample_width  = 0.0
                         sample_height = 0.0
                         if self.grd_attn == True:
-                            attn_mask = self.generate_stop_attention_mask(attn_size=ground_attention_size)
+                            attn_mask = stop_attn_mask
                     else:
                         # Extract ground boxes-- sample_left, sample_top, sample_width, sample_height
                         sample_left   = sample_data[idx][1] * 1.0
