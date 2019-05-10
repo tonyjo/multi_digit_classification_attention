@@ -1,7 +1,7 @@
 from __future__ import print_function
 import tensorflow as tf
 import numpy as np
-from nets import attn_cnn as net
+from nets import classification_network as clfy_net
 
 class Model_Classify(object):
     def __init__(self, image_height=64, image_width=64, l2=0.0002, mode='train'):
@@ -31,12 +31,12 @@ class Model_Classify(object):
             return out_logits
 
     def build_model(self):
-        logits = classification_network(self.images, dropout=self.drop_prob, mode=self.mode)
+        logits = clfy_net(self.images, dropout=self.drop_prob, mode=self.mode)
         logits = self._prediction_layer(inputs=logits, hidden_dim=1024, reuse=False)
         print('CNN build model sucess!')
 
         final_loss = 0.0
-        batch_size = tf.shape(features)[0]
+        batch_size = tf.shape(logits)[0]
         # Loss
         interm_loss = self.softmax_cross_entropy(labels=self.labels, logits=logits)
         # Collect loss
@@ -54,7 +54,7 @@ class Model_Classify(object):
         return final_loss/tf.to_float(batch_size)
 
     def build_test_model(self):
-        logits = classification_network(self.images, dropout=self.drop_prob, mode=self.mode)
+        logits = clfy_net(self.images, dropout=self.drop_prob, mode=self.mode)
         logits = self._prediction_layer(inputs=logits, hidden_dim=1024, reuse=False)
 
         print('CNN build model sucess!')

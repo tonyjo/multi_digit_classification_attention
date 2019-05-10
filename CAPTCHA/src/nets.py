@@ -192,7 +192,7 @@ def classification_network(images, dropout, mode='train'):
         layer_8 = tf.nn.leaky_relu(layer_8,  name='relu_layer_8')
         layer_8 = tf.nn.dropout(layer_8, keep_prob=dropout)
 
-    return logits
+    return layer_8
 
 #-------------------------Baseline-CNN------------------------------------
 def base_classification_network(images, dropout, mode='train'):
