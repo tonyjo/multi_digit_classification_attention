@@ -36,7 +36,7 @@ class Model_Classify(object):
         print('CNN build model sucess!')
 
         final_loss = 0.0
-        batch_size = tf.shape(features)[0]
+        batch_size = tf.shape(logits)[0]
         # Loss
         interm_loss = self.softmax_cross_entropy(labels=self.labels, logits=logits)
         # Collect loss
