@@ -111,7 +111,7 @@ class Train(object):
                 prev_loss = curr_loss
 
                 # Save model's parameters
-                if (e+1) % self.save_every == 0:
+                if (e) % self.save_every == 0:
                     saver.save(sess, os.path.join(self.model_path, 'model'), global_step=e+1)
                     print("model-%s saved." %(e+1))
         # Close session
@@ -119,11 +119,13 @@ class Train(object):
 #-------------------------------------------------------------------------------
 def main():
     # Load train dataset
-    data = dataLoader(directory='./dataset', dataset_dir='extra_cropped',
-                      height=24, width=24, dataset_name='extra.txt',
-                      max_steps=6, mode='Train')
+    data = dataLoader(directory='./dataset/captcha', dataset_dir='train',\
+                      dataset_name='train.txt', max_steps=6, image_width=200,\
+                      image_height=64, image_patch_width=54, image_patch_height=54,\
+                      grd_attn=False, mode='Train')
+
     # Load Model
-    model = Model_Classify(image_height=54, image_width=54, l2=0.0005, mode='train')
+    model = Model_Classify(image_height=54, image_width=54, l2=0.0002, mode='train')
 
     # Load Trainer
     trainer = Train(model, data, val_data=None, n_epochs=400, batch_size=128,
