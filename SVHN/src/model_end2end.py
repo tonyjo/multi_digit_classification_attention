@@ -21,8 +21,8 @@ class Model(object):
         # Placeholders
         self.images    = tf.placeholder(tf.float32, [None, image_height, image_width, 3])
         self.labels    = tf.placeholder(tf.float32, [None, 10])
-        self.bboxes    = tf.placeholder(tf.float32,   [None, self.T, 4])
-        self.gnd_attn  = tf.placeholder(tf.float32,   [None, self.T, self.L])
+        self.bboxes    = tf.placeholder(tf.float32, [None, self.T, 4])
+        self.gnd_attn  = tf.placeholder(tf.float32, [None, self.T, self.L])
         self.drop_prob = tf.placeholder(tf.float32, name='dropout_prob')
 
     def _mean_squared_error(self, grd_bboxes, pred_bboxes):
