@@ -56,6 +56,9 @@ class Model_Classify(object):
     def build_test_model(self):
         logits = clfy_net(self.images, dropout=self.drop_prob, mode=self.mode)
         logits = self._prediction_layer(inputs=logits, hidden_dim=1024, reuse=False)
+        logits = tf.nn.softmax(logits=logits)
+        logits = tf.argmax(input=logits, axis=-1)
+        print(logits.get_shape())
 
         print('CNN build model sucess!')
 

@@ -1,6 +1,7 @@
 from __future__ import print_function
 import os
 import cv2
+import string
 import random
 import numpy as np
 from copy import deepcopy
@@ -23,6 +24,19 @@ class dataLoader(object):
         # Full images file path
         file_path = os.path.join(self.directory, self.dataset_name)
 
+        # Get characters
+        az = string.ascii_lowercase
+        AZ = string.ascii_uppercase
+        nm = string.digits
+        # Append all characters
+        all_selections = []
+        for i in range(len(az)):
+            all_selections.append(az[i])
+        for i in range(len(AZ)):
+            all_selections.append(AZ[i])
+        for i in range(len(nm)):
+            all_selections.append(nm[i])
+
         with open(file_path, 'r') as f:
             frames = f.readlines()
 
@@ -32,9 +46,10 @@ class dataLoader(object):
                 frame = frames[i+u]
                 path, label, w1, h1, w2, h2 = frame.split(', ')
                 h2 = h2[:-1] # Remove /n at the end
-                if self.mode == 'test':
+                if self.mode == 'Test':
                     path = int(path[0:-4]) + 55000
                     path = str(path) + '.png'
+                    label = all_selections.index(label) # Convert to label category
                 interm_data.append([path, label, int(w1), int(h1), int(w2), int(h2)])
 
             final_data = []
@@ -170,6 +185,7 @@ class dataLoader(object):
         while True:
             image_batch      = []
             image_batch_norm = []
+            grd_lables_batch = []
             grd_bboxes_batch = []
             grd_attnMk_batch = []
             # Generate training batch
@@ -187,6 +203,7 @@ class dataLoader(object):
                 # Gather sample data for all time steps
                 all_sample_data = []
                 all_sample_attn = []
+                all_sample_labl = []
                 for idx in range((self.max_steps+2)):
                     # Start State
                     if idx == 0:
@@ -206,6 +223,7 @@ class dataLoader(object):
                             attn_mask = stop_attn_mask
                     else:
                         # Extract ground boxes-- sample_left, sample_top, sample_width, sample_height
+                        sample_label  = sample_data[idx][0]
                         sample_left   = sample_data[idx][1] * 1.0
                         sample_top    = sample_data[idx][2] * 1.0
                         sample_width  = sample_data[idx][3] * 1.0
@@ -224,20 +242,27 @@ class dataLoader(object):
                             # Generate mask
                             attn_mask   = self.generate_ground_gaussian_attention_mask(ground_attention_size,\
                                                          sple_top, sple_heigth, sple_left, sple_width)
+                        if self.mode == 'Test':
+                            all_sample_labl.append(sample_label)
                     # Collect
                     if self.grd_attn == True:
                         attn_mask = attn_mask.flatten()
                         all_sample_attn.append(attn_mask)
                     all_sample_data.append([sample_left, sample_top, sample_width, sample_height])
+
                 # Append to generated batch
                 # image_batch.append(image)
                 image_batch_norm.append(image_norm)
                 grd_bboxes_batch.append(all_sample_data)
+                if self.mode == 'Test':
+                    grd_lables_batch.append(all_sample_labl)
                 if self.grd_attn == True:
                     grd_attnMk_batch.append(all_sample_attn)
-
             if self.grd_attn == True:
-                #yield np.array(image_batch), np.array(image_batch_norm), np.array(grd_bboxes_batch), np.array(grd_attnMk_batch)
+                # yield np.array(image_batch), np.array(image_batch_norm), np.array(grd_bboxes_batch), np.array(grd_attnMk_batch)
                 yield np.array(image_batch_norm), np.array(grd_bboxes_batch), np.array(grd_attnMk_batch)
             else:
-                yield np.array(image_batch), np.array(image_batch_norm), np.array(grd_bboxes_batch)
+                if self.mode == 'Test':
+                    yield np.array(image_batch), np.array(grd_lables_batch), np.array(image_batch_norm), np.array(grd_bboxes_batch)
+                else:
+                    yield np.array(image_batch), np.array(image_batch_norm), np.array(grd_bboxes_batch)

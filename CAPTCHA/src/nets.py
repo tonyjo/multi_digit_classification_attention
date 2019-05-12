@@ -174,7 +174,7 @@ def classification_network(images, dropout, mode='train'):
                             stride=1, scope='layer_6')
         layer_6 = _batch_norm(layer_6, mode=mode, name='layer_6')
         layer_6 = tf.nn.leaky_relu(layer_6, name='relu_layer_6')
-        print(layer_6.get_shape())
+        # print(layer_6.get_shape())
 
     with tf.variable_scope('classification_Fully_Connected'):
         # Flatten
