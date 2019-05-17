@@ -117,7 +117,7 @@ def attn_cnn(images, mode='train'):
         layer_8 = _batch_norm(layer_8, mode=mode, name='layer_8')
         # print(layer_8.get_shape())
 
-        return layer_8
+        return layer_8, layer_4
 
 #-------------------------Classification-CNN------------------------------------
 def classification_network(images, dropout, mode='train'):
