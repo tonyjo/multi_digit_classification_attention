@@ -77,9 +77,10 @@ class Model(object):
             h_att   = tf.nn.relu(features + tf.expand_dims(tf.matmul(h, w), 1) + b) # (N, L, D)
             out_att = tf.reshape(tf.matmul(tf.reshape(h_att, [-1, self.D]), w_att), [-1, self.L]) # (N, L)
             alpha   = tf.nn.softmax(out_att)
-            context = tf.reduce_sum(features * tf.expand_dims(alpha, 2), 1, name='context') #(N, D)
+            out_ft  = features * tf.expand_dims(alpha, 2)
+            context = tf.reduce_sum(out_ft, 1, name='context') #(N, D)
 
-            return context, alpha # out_att # normalized
+            return context, out_ft, alpha # out_att # normalized
 
     def _prediction_layer(self, name_scope, inputs, outputs, H, reuse=False):
         with tf.variable_scope(name_scope, reuse=reuse):
@@ -134,7 +135,7 @@ class Model(object):
         # Loop for t steps
         for t in range(self.T):
             # Attend to final features
-            context, alpha  = self._attention_layer(features, h, reuse=(t!=0))
+            context, out_ft, alpha  = self._attention_layer(features, h, reuse=(t!=0))
             # Attend to STN features
             stn_output_attn = stn_output * tf.expand_dims(alpha, 2)
             # Collect masks
@@ -147,7 +148,7 @@ class Model(object):
                                                inputs=h, outputs=4, H=self.H, reuse=(t!=0))
             # CAPTCHA prediction
             interm_captcha_pred = self._interm_prediction_layer(name_scope='interm_captcha_pred',\
-                                                         inputs=context, stn_inputs=stn_output_attn,\
+                                                         inputs=out_ft, stn_inputs=stn_output_attn,\
                                                          outputs=512, H=[D1, D2], reuse=(t!=0))
             interm_captcha_pred = tf.nn.dropout(interm_captcha_pred, keep_prob=self.drop_prob)
             captcha_pred = self._prediction_layer(name_scope='captcha_pred_layer',\
