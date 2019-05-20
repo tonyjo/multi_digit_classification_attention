@@ -92,21 +92,20 @@ class Model(object):
 
     def _interm_prediction_layer(self, name_scope, inputs, stn_inputs, outputs, H, reuse=False):
         batch_size = tf.shape(inputs)[0]
-        _, D = inputs.get_shape().as_list()
-        # Average Pool
-        inputs = tf.reshape(inputs, [-1, 14, 48, -1])
-        avg_inputs = tf.nn.avg_pool(value=inputs, ksize=[1, 3, 3, 1], strides=[1, 2, 2, 1], padding='VALID')
-        stn_inputs = tf.reshape(inputs, [-1, 14, 48, -1])
-        avg_stn_in = tf.nn.avg_pool(value=stn_inputs, ksize=[1, 3, 3, 1], strides=[1, 2, 2, 1], padding='VALID') #
+        # Average Pool inputs
+        inputs     = tf.reshape(inputs, [-1, 14, 48, int(H[0])])
+        avg_inputs = tf.nn.avg_pool(value=inputs, ksize=[1, 3, 9, 1], strides=[1, 2, 7, 1], padding='VALID')
+        stn_inputs = tf.reshape(stn_inputs, [-1, 14, 48, int(H[1])])
+        avg_stn_in = tf.nn.avg_pool(value=stn_inputs, ksize=[1, 3, 9, 1], strides=[1, 2, 7, 1], padding='VALID')
         # Concatenate inputs
         avg_inputs = tf.concat(values=[avg_inputs, avg_stn_in], axis=3)
+        _, H, W, D = avg_inputs.get_shape().as_list()
         # Flatten
         fln_inputs = tf.reshape(avg_inputs, [batch_size, -1])
-        # Prediction layer
+        # Prediction
         with tf.variable_scope(name_scope, reuse=reuse):
-            w = tf.get_variable(shape=[H, outputs], initializer=self.trunc_initializer, name='weights')
+            w = tf.get_variable(shape=[H*W*D, outputs], initializer=self.trunc_initializer, name='weights')
             b = tf.get_variable(shape=[outputs], initializer=self.const_initializer, name='biases')
-
             out_logits = tf.matmul(fln_inputs, w) + b
 
             return out_logits
@@ -120,7 +119,8 @@ class Model(object):
         stn_output = self._stn_layer(name_scope='Localization_STN', inputs=layer_4, reuse=False)
         stn_output = tf.nn.avg_pool(value=stn_output, ksize=[1, 3, 3, 1], strides=[1, 2, 2, 1], padding='SAME')
         _, h1, w1, d1 = stn_output.get_shape().as_list()
-        stn_output = tf.reshape(features, [-1, h1*w1, -1])
+        stn_output = tf.reshape(features, [-1, h1*w1, D2])
+        print(stn_output.get_shape())
         print('CNN build model sucess!')
 
         batch_size = tf.shape(features)[0]
@@ -133,10 +133,10 @@ class Model(object):
         c, h = self._get_initial_lstm(features=features)
         # Loop for t steps
         for t in range(self.T):
-            # Attention
+            # Attend to final features
             context, alpha  = self._attention_layer(features, h, reuse=(t!=0))
             # Attend to STN features
-            stn_output_attn = tf.reduce_sum(stn_output * tf.expand_dims(alpha, 2), 1) #(N, D)
+            stn_output_attn = stn_output * tf.expand_dims(alpha, 2)
             # Collect masks
             alpha_list.append(alpha)
             # LSTM step
@@ -146,11 +146,12 @@ class Model(object):
             bbox_pred = self._prediction_layer(name_scope='bbox_pred_layer',\
                                                inputs=h, outputs=4, H=self.H, reuse=(t!=0))
             # CAPTCHA prediction
-            captcha_pred = self._interm_prediction_layer(name_scope='interm_captcha_pred',\
+            interm_captcha_pred = self._interm_prediction_layer(name_scope='interm_captcha_pred',\
                                                          inputs=context, stn_inputs=stn_output_attn,\
-                                                         outputs=1024, H=int(D1+D2), reuse=(t!=0))
+                                                         outputs=512, H=[D1, D2], reuse=(t!=0))
+            interm_captcha_pred = tf.nn.dropout(interm_captcha_pred, keep_prob=self.drop_prob)
             captcha_pred = self._prediction_layer(name_scope='captcha_pred_layer',\
-                                                  inputs=captcha_pred, outputs=10, H=1024, reuse=(t!=0))
+                                                  inputs=interm_captcha_pred, outputs=64, H=512, reuse=(t!=0))
             # Loss
             interm_loss_digit = self._softmax_cross_entropy(labels=self.labels[:, t, :], logits=captcha_pred)
             interm_loss_bbox  = self._mean_squared_error(grd_bboxes=self.bboxes[:, t, :], pred_bboxes=bbox_pred)
