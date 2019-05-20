@@ -49,7 +49,7 @@ class dataLoader(object):
                 if self.mode == 'Test':
                     path = int(path[0:-4]) + 55000
                     path = str(path) + '.png'
-                    label = all_selections.index(label) # Convert to label category
+                label = all_selections.index(label) # Convert to label category
                 interm_data.append([path, label, int(w1), int(h1), int(w2), int(h2)])
 
             final_data = []
@@ -175,6 +175,13 @@ class dataLoader(object):
         if self.grd_attn == True:
             start_attn_mask = self.generate_start_attention_mask(attn_size=ground_attention_size)
             stop_attn_mask  = self.generate_stop_attention_mask(attn_size=ground_attention_size)
+        # Pre-create start and stop state label
+        sample_label_start  = self.possible_pred
+        sample_label_stop   = self.possible_pred + 1
+        one_hot_label_start = np.zeros(self.possible_pred+2)
+        one_hot_label_stop  = np.zeros(self.possible_pred+2)
+        one_hot_label_start[sample_label_start] = 1.0
+        one_hot_label_stop[sample_label_stop]   = 1.0
         # Generate data based on training/validation
         if self.mode == 'Train':
             # Randomize data
@@ -196,8 +203,8 @@ class dataLoader(object):
                 image           = cv2.imread(sample_img_path)
                 org_img_hgth, org_img_wdth, _ = image.shape
                 image           = cv2.resize(image, (self.image_width, self.image_height))
-                if self.mode != 'Train':
-                    image_batch.append(image)
+                # if self.mode != 'Train':
+                #     image_batch.append(image)
                 # image_norm      = deepcopy(image)
                 # Set image between -1 and 1
                 image_norm = image /127.5 - 1.0
@@ -208,24 +215,26 @@ class dataLoader(object):
                 for idx in range((self.max_steps+2)):
                     # Start State
                     if idx == 0:
-                        sample_left   = 1.0
-                        sample_top    = 1.0
+                        one_hot_label = one_hot_label_start
+                        sample_left   = 0.0
+                        sample_top    = 0.0
                         sample_width  = 1.0
                         sample_height = 1.0
                         if self.grd_attn == True:
                             attn_mask = start_attn_mask
                     # End State
                     elif idx == (self.max_steps+1):
-                        sample_left   = 0.0
-                        sample_top    = 0.0
-                        sample_width  = 0.0
-                        sample_height = 0.0
+                        one_hot_label = one_hot_label_stop
+                        sample_left   = self.image_width - 3
+                        sample_top    = self.image_height - 3
+                        sample_width  = 1.0
+                        sample_height = 1.0
                         if self.grd_attn == True:
                             attn_mask = stop_attn_mask
                     else:
                         # Extract and create ground labels
-                        sample_label  = sample_data[idx][0]
-                        one_hot_label = np.zeros(self.possible_pred)
+                        sample_label  = int(sample_data[idx][0])
+                        one_hot_label = np.zeros(self.possible_pred+2)
                         one_hot_label[sample_label] = 1.0
                         # Extract ground boxes-- sample_left, sample_top, sample_width, sample_height
                         sample_left   = sample_data[idx][1] * 1.0
@@ -251,16 +260,16 @@ class dataLoader(object):
                         attn_mask = attn_mask.flatten()
                         all_sample_attn.append(attn_mask)
                     all_sample_data.append([sample_left, sample_top, sample_width, sample_height])
-                    all_sample_labl.append(sample_label)
+                    all_sample_labl.append(one_hot_label)
 
                 # Append to generated batch
                 # image_batch.append(image)
-                image_batch_norm.append(image_norm)
-                grd_bboxes_batch.append(all_sample_data)
-                if self.mode == 'Test':
-                    grd_lables_batch.append(all_sample_labl)
                 if self.grd_attn == True:
                     grd_attnMk_batch.append(all_sample_attn)
+                image_batch_norm.append(image_norm)
+                grd_bboxes_batch.append(all_sample_data)
+                grd_lables_batch.append(all_sample_labl)
+
             if self.grd_attn == True:
                 # yield np.array(image_batch), np.array(image_batch_norm), np.array(grd_bboxes_batch), np.array(grd_attnMk_batch)
                 yield np.array(image_batch_norm), np.array(grd_lables_batch), np.array(grd_bboxes_batch), np.array(grd_attnMk_batch)
