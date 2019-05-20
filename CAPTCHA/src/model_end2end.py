@@ -26,7 +26,7 @@ class Model(object):
         self.trunc_initializer  = tf.initializers.truncated_normal(0.01)
         # Placeholders
         self.images    = tf.placeholder(tf.float32, [None, image_height, image_width, 3])
-        self.labels    = tf.placeholder(tf.float32, [None, self.T, 10])
+        self.labels    = tf.placeholder(tf.float32, [None, self.T, 64])
         self.bboxes    = tf.placeholder(tf.float32, [None, self.T, 4])
         self.gnd_attn  = tf.placeholder(tf.float32, [None, self.T, self.L])
         self.drop_prob = tf.placeholder(tf.float32, name='dropout_prob')
