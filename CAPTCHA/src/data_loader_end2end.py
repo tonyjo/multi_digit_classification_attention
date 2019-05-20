@@ -263,7 +263,7 @@ class dataLoader(object):
                     grd_attnMk_batch.append(all_sample_attn)
             if self.grd_attn == True:
                 # yield np.array(image_batch), np.array(image_batch_norm), np.array(grd_bboxes_batch), np.array(grd_attnMk_batch)
-                yield np.array(image_batch_norm), , np.array(grd_lables_batch), np.array(grd_bboxes_batch), np.array(grd_attnMk_batch)
+                yield np.array(image_batch_norm), np.array(grd_lables_batch), np.array(grd_bboxes_batch), np.array(grd_attnMk_batch)
             else:
                 # yield np.array(image_batch), np.array(grd_lables_batch), np.array(image_batch_norm), np.array(grd_bboxes_batch)
                 yield np.array(image_batch_norm), np.array(grd_lables_batch), np.array(grd_bboxes_batch)
