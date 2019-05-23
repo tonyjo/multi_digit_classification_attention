@@ -125,7 +125,7 @@ def main():
                       grd_attn=False, mode='Train')
 
     # Load Model
-    model = Model_Classify(image_height=54, image_width=54, l2=0.0002, mode='train')
+    model = Model_Classify(image_height=54, image_width=54, l2=0.0002, mode=True)
 
     # Load Trainer
     trainer = Train(model, data, val_data=None, n_epochs=400, batch_size=128,

@@ -1,15 +1,15 @@
 import tensorflow as tf
 slim = tf.contrib.slim
 
-def _batch_norm(x, mode='train', name=None):
+def _batch_norm(x, mode, name=None):
     with tf.variable_scope(name + '_batch_norm'):
         tf.layers.batch_normalization(inputs=x,
                                       center=True,
                                       scale=True,
-                                      training=(mode=='train'))
+                                      training=mode)
     return x
 
-def net(images, mode='train'):
+def net(images, mode):
     with tf.variable_scope('CNN'):
         layer_1 = slim.conv2d(images, 64, [5, 5],
                             activation_fn=None,
@@ -44,7 +44,7 @@ def net(images, mode='train'):
 
         return layer_4
 
-def attn_cnn(images, mode='train'):
+def attn_cnn(images, mode=True):
     with tf.variable_scope('Attention_CNN'):
         layer_1 = slim.conv2d(images, 64, [5, 5],
                             activation_fn=None,

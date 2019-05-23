@@ -6,13 +6,12 @@ from nets import attn_cnn as net
 
 class Model(object):
     def __init__(self, dim_feature=[49, 256], dim_hidden=128, n_time_step=3,
-                 alpha_c=0.0, image_height=64, image_width=64, l2=0.0002, mode='train'):
+                 alpha_c=0.0, image_height=64, image_width=64, l2=0.0002, mode=True):
         self.L  = dim_feature[0]
         self.D  = dim_feature[1]
         self.H  = dim_hidden
         self.T  = n_time_step
         self.l2 = l2
-        self.mode    = mode
         self.alpha_c = alpha_c
         self.H_attn, self.W_attn = int(np.sqrt(self.L)), int(np.sqrt(self.L))
         # Weight Initializer
@@ -30,6 +29,7 @@ class Model(object):
         self.bboxes    = tf.placeholder(tf.float32, [None, self.T, 4])
         self.gnd_attn  = tf.placeholder(tf.float32, [None, self.T, self.L])
         self.drop_prob = tf.placeholder(tf.float32, name='dropout_prob')
+        self.is_train  = tf.placeholder(tf.bool, name='mode')
 
     def _mean_squared_error(self, grd_bboxes, pred_bboxes):
         loss = tf.losses.mean_squared_error(labels=grd_bboxes, predictions=pred_bboxes)
@@ -185,7 +185,7 @@ class Model(object):
         return final_loss/tf.to_float(batch_size)
 
     def build_test_model(self):
-        features, layer_4 = net(self.images, mode=self.mode)
+        features, layer_4 = net(self.images, mode=self.is_train)
         _, H1, W1, D1 = features.get_shape().as_list()
         _, H2, W2, D2 = layer_4.get_shape().as_list()
         features = tf.reshape(features, [-1, self.L, self.D])

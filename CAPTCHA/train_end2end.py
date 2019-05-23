@@ -15,8 +15,10 @@ class Train(object):
         self.val_data      = val_data
         self.n_epochs      = kwargs.pop('n_epochs', 20)
         self.batch_size    = kwargs.pop('batch_size', 64)
+        self.val_bth_size  = kwargs.pop('val_batch_size', 1)
         self.update_rule   = kwargs.pop('update_rule', 'adam')
         self.learning_rate = kwargs.pop('learning_rate', 0.0001)
+        self.valid_freq    = kwargs.pop('valid_freq', 10)
         self.print_every   = kwargs.pop('print_every', 100)
         self.save_every    = kwargs.pop('save_every', 1)
         self.log_path      = kwargs.pop('log_path', './log/')
@@ -36,16 +38,159 @@ class Train(object):
         if not os.path.exists(self.log_path):
             os.makedirs(self.log_path)
 
+    def bbox_threshold(self, left, top, width, height):
+        valid_box = False
+        # If the threshold box is less than 30
+        if width * height < 30:
+            valid_box = False
+        elif left == 0 and top == 0 and\
+             width == 0 and height == 0:
+            valid_box = False
+        else:
+            valid_box = True
+
+        return valid_box
+
+    def bb_intersection_over_union(self, boxA, boxB):
+        """
+        Args:
+            bboxes1: shape (total_bboxes1, 4)
+                with x1, y1, x2, y2 point order.
+            bboxes2: shape (total_bboxes2, 4)
+                with x1, y1, x2, y2 point order.
+
+            p1 *-----
+               |     |
+               |_____* p2
+
+        Returns:
+            Tensor with shape (total_bboxes1, total_bboxes2)
+            with the IoU (intersection over union) of bboxes1[i] and bboxes2[j]
+            in [i, j].
+        """
+        # determine the (x, y)-coordinates of the intersection rectangle
+        xA = max(boxA[0], boxB[0])
+        yA = max(boxA[1], boxB[1])
+        xB = min(boxA[2], boxB[2])
+        yB = min(boxA[3], boxB[3])
+
+        # compute the area of intersection rectangle
+        interArea = (xB - xA) * (yB - yA)
+
+        # compute the area of both the prediction and ground-truth
+        # rectangles
+        boxAArea = (boxA[2] - boxA[0]) * (boxA[3] - boxA[1])
+        boxBArea = (boxB[2] - boxB[0]) * (boxB[3] - boxB[1])
+
+        # compute the intersection over union by taking the intersection
+        # area and dividing it by the sum of prediction + ground-truth
+        # areas - the interesection area
+        iou = interArea / float(boxAArea + boxBArea - interArea)
+
+        # return the intersection over union value
+        return iou
+
+    def IOU(grnd_bboxes, pred_bboxes):
+        count = 0.0
+        final_IOU_score = 0.0
+        for t in range(n_iters):
+            sample_seq = 0.0
+            sample_iou = 0.0
+            for T in range(max_steps):
+                ## Ground
+                sample_left_grd  = grnd_bboxes[t][0][T][0]
+                sample_top_grd   = grnd_bboxes[t][0][T][1]
+                sample_width_grd = grnd_bboxes[t][0][T][2]
+                sample_heigt_grd = grnd_bboxes[t][0][T][3]
+
+                ## Predicted
+                sample_left  = int(pred_bboxes[t][T][0][0])
+                sample_top   = int(pred_bboxes[t][T][0][1])
+                sample_width = int(pred_bboxes[t][T][0][2])
+                sample_heigt = int(pred_bboxes[t][T][0][3])
+
+                vld_bbox_prd = self.bbox_threshold(left=sample_left, top=sample_top,\
+                                        width=sample_width, height=sample_heigt)
+
+                vld_bbox_grd = self.bbox_threshold(left=sample_left_grd, top=sample_top_grd,\
+                                        width=sample_width_grd, height=sample_heigt_grd)
+
+                if vld_bbox_grd:
+                    sample_seq += 1
+                    if vld_bbox_prd:
+                        # Predicted
+                        sample_right = sample_left + sample_width
+                        sample_down  = sample_top  + sample_heigt
+                        # Ground truth
+                        sample_right_grd = sample_left_grd + sample_width_grd
+                        sample_down_grd  = sample_top_grd  + sample_heigt_grd
+
+                        boxA = (sample_left, sample_top, sample_right, sample_down)
+                        boxB = (sample_left_grd, sample_top_grd, sample_right_grd, sample_down_grd)
+
+                        sample_iou += self.bb_intersection_over_union(boxA, boxB)
+            # Print Every
+            if t%2000 == 0:
+                print(' Validation IOU Completion..{%d/%d}' % (t, n_iters))
+            final_IOU_score += sample_iou/sample_seq
+            count += 1.0
+        #-----------------------------------------------------
+        print('Validation IOU Completion..{%d/%d}' % (n_iters, n_iters))
+        print('Completed!')
+        print('Final Sequence IOU score = ', np.ceil((final_IOU_score/count)*100), '%')
+        #-----------------------------------------------------
+
+    def BBox_accuracy(grnd_labels, pred_cpthas):
+        count = 0.0
+        final_seq_acc_prd = 0.0
+        # Run predictions
+        for t in range(n_iters):
+            # Get image
+            sample_cnt = 0
+            sample_seq = len(grnd_labels[t][0])
+            sample_acc_prd = 0.0
+            # Loop through steps
+            for T in range(max_steps):
+                # Label
+                sample_label = np.argmax(grnd_labels[t][0][T])
+                # Predicted
+                pred_score = pred_cpthas[t][T][0]
+                # Check sample
+                if sample_label != 62 or sample_label != 63:
+                    if sample_cnt < sample_seq:
+                        # Predictions
+                        if int( pred_score) == int(sample_label):
+                            sample_acc_prd += 1.0
+                        # Update
+                        sample_cnt += 1
+
+            final_seq_acc_prd += sample_acc_prd/sample_seq
+
+            if t%print_every == 0:
+                print('Completion..{%d/%d}' % (t, n_iters))
+            count += 1.0
+        #-----------------------------------------------------
+        print('Completion..{%d/%d}' % (n_iters, n_iters))
+        print('Completed!')
+
     def train(self):
         # Train Data Loader
         train_loader = self.data.gen_data_batch(self.batch_size)
+        valid_loader = self.val_data.gen_data_batch(self.val_bth_size)
 
         # Train dataset
         n_examples = self.data.max_length
         n_iters_per_epoch = int(np.ceil(float(n_examples)/self.batch_size))
+        # Validation dataset
+        n_examples_val = self.valid_loader.max_length
+        valid_n_iters  = int(np.ceil(float(n_examples_val)/self.val_bth_size))
 
         # Build model with loss
         loss = self.model.build_model()
+        # Reuse graph to build test model
+        tf.get_variable_scope().reuse_variables()
+        # Build model for inference
+        pred_bboxs_, pred_cptha_, alpha_list_ = self.model.build_test_model()
 
         # Global step
         global_step = tf.Variable(0, dtype=tf.int32, trainable=False)
@@ -66,9 +211,10 @@ class Train(object):
         summary_op = tf.summary.merge_all()
 
         print("The number of epoch: %d" %self.n_epochs)
-        print("Data size: %d" %n_examples)
+        print("Data size: %d"  %n_examples)
         print("Batch size: %d" %self.batch_size)
-        print("Iterations per epoch: %d" %n_iters_per_epoch)
+        print("Iterations per epoch: %d"   %n_iters_per_epoch)
+        print("Validation interations: %d" %valid_n_iters)
 
         # Set GPU options
         config = tf.GPUOptions(allow_growth=True)
@@ -78,7 +224,7 @@ class Train(object):
             sess.run(tf.global_variables_initializer())
             # Tensorboard summary path
             summary_writer = tf.summary.FileWriter(self.log_path, graph=sess.graph)
-            saver = tf.train.Saver(max_to_keep=2)
+            saver = tf.train.Saver(max_to_keep=4)
 
             if self.pretrained_model is not None:
                 print("Start training with pretrained Model..")
@@ -91,6 +237,7 @@ class Train(object):
                 for i in range(n_iters_per_epoch):
                     image_batch, grd_labels_batch, grd_bboxes_batch, grd_attn_batch = next(train_loader)
                     feed_dict = {self.model.images: image_batch,
+                                 self.model.mode: True
                                  self.model.labels: grd_labels_batch,
                                  self.model.bboxes: grd_bboxes_batch,
                                  self.model.gnd_attn: grd_attn_batch,
@@ -101,6 +248,13 @@ class Train(object):
 
                     if i%self.print_every == 0:
                         print('Epoch Completion..{%d/%d}' % (i, n_iters_per_epoch))
+
+                    if i%self.check_val == 0:
+                        pred_cpthas = []
+                        pred_bboxes = []
+                        grnd_bboxes = []
+                        grnd_labels = []
+                        for i in range(n_iters_per_epoch):
 
                     # write summary for tensorboard visualization
                     if i % 10 == 0:
@@ -120,16 +274,19 @@ class Train(object):
         sess.close()
 #-------------------------------------------------------------------------------
 def main():
-    # Load train dataset
+    # Load train/val dataset
     data = dataLoader(directory='./dataset/captcha', dataset_dir='train',\
                       dataset_name='train.txt', max_steps=6, image_width=200,\
                       image_height=64, grd_attn=True, mode='Train')
+    val_data = dataLoader(directory='./dataset/captcha', dataset_dir='val',\
+                      dataset_name='val.txt', max_steps=6, image_width=200,\
+                      image_height=64, grd_attn=False, mode='Test')
     # Load Model
     model = Model(dim_feature=[672, 128], dim_hidden=128, n_time_step=8,
                   alpha_c=1.0, image_height=64, image_width=200, mode='train')
     # Load Trainer
-    trainer = Train(model, data, val_data=None, n_epochs=1000, batch_size=64,
-                    update_rule='adam', learning_rate=0.0001, print_every=100, save_every=5,
+    trainer = Train(model, data, val_data=val_data, n_epochs=1000, batch_size=64, val_batch_size=1,
+                    update_rule='adam', learning_rate=0.0001, print_every=100, valid_freq=10, save_every=5,
                     pretrained_model=None, model_path='model/lstm2/', log_path='log2/')
     # Begin Training
     trainer.train()
