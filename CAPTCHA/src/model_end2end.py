@@ -193,14 +193,14 @@ class Model(object):
         stn_output = self._stn_layer(name_scope='Localization_STN', inputs=layer_4, reuse=False)
         stn_output = tf.nn.avg_pool(value=stn_output, ksize=[1, 3, 3, 1], strides=[1, 2, 2, 1], padding='SAME')
         _, h1, w1, d1 = stn_output.get_shape().as_list()
-        stn_output = tf.reshape(features, [-1, h1*w1, -1])
+        stn_output = tf.reshape(features, [-1, h1*w1, D2])
+        print(stn_output.get_shape())
         print('CNN build model sucess!')
 
-        alpha_list = []
+        batch_size = tf.shape(features)[0]
         pred_bboxs = []
         pred_cptha = []
-
-        batch_size = tf.shape(features)[0]
+        alpha_list = []
         lstm_cell  = tf.nn.rnn_cell.BasicLSTMCell(num_units=self.H)
         lstm_cell  = tf.contrib.rnn.DropoutWrapper(lstm_cell,\
                                                    input_keep_prob=self.drop_prob)
@@ -208,10 +208,10 @@ class Model(object):
         c, h = self._get_initial_lstm(features=features)
         # Loop for t steps
         for t in range(self.T):
-            # Attention
-            context, alpha  = self._attention_layer(features, h, reuse=(t!=0))
+            # Attend to final features
+            context, out_ft, alpha  = self._attention_layer(features, h, reuse=(t!=0))
             # Attend to STN features
-            stn_output_attn = tf.reduce_sum(stn_output * tf.expand_dims(alpha, 2), 1) #(N, D)
+            stn_output_attn = stn_output * tf.expand_dims(alpha, 2)
             # Collect masks
             alpha_list.append(alpha)
             # LSTM step
@@ -221,12 +221,15 @@ class Model(object):
             bbox_pred = self._prediction_layer(name_scope='bbox_pred_layer',\
                                                inputs=h, outputs=4, H=self.H, reuse=(t!=0))
             # CAPTCHA prediction
-            captcha_pred = self._interm_prediction_layer(name_scope='interm_captcha_pred',\
-                                                         inputs=context, stn_inputs=stn_output_attn,\
-                                                         outputs=1024, H=int(D1+D2), reuse=(t!=0))
+            interm_captcha_pred = self._interm_prediction_layer(name_scope='interm_captcha_pred',\
+                                                         inputs=out_ft, stn_inputs=stn_output_attn,\
+                                                         outputs=512, H=[D1, D2], reuse=(t!=0))
+            interm_captcha_pred = tf.nn.dropout(interm_captcha_pred, keep_prob=self.drop_prob)
             captcha_pred = self._prediction_layer(name_scope='captcha_pred_layer',\
-                                                  inputs=captcha_pred, outputs=10, H=1024, reuse=(t!=0))
-            # Collect
+                                                  inputs=interm_captcha_pred, outputs=64, H=512, reuse=(t!=0))
+            captcha_pred = tf.nn.softmax(logits=captcha_pred)
+            captcha_pred = tf.argmax(input=captcha_pred, axis=-1)
+            # Collects
             pred_bboxs.append(bbox_pred)
             pred_cptha.append(captcha_pred)
 

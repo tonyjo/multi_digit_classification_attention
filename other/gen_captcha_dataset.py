@@ -65,7 +65,8 @@ for select in all_selections:
         # Randomly generate a placeholder to put in the char
         insert_id  = random.randint(0, max_chars)
         # Generate numbers
-        for t in range(max_chars):
+        max_steps = random.randint(4, max_chars)
+        for t in range(max_steps):
             if t == insert_id:
                 lbl  = select
                 data = image.generate_image(select)
@@ -99,13 +100,13 @@ for select in all_selections:
                 h, w, _ = pix.shape
                 # print(pix.shape)
                 # Get BBox's
-                h1 = 10
+                h1 = random.randint(8, 20)
                 w1 = prev_w
                 h2 = h
                 w2 = w
                 all_bbox.append([w1, h1, w2, h2])
                 # Paint Canvas
-                canvas[10:10+h, prev_w+2:prev_w+2+w, :] = pix
+                canvas[h1:h1+h, prev_w+2:prev_w+2+w, :] = pix
                 prev_w += w
             # Append to training set
             train_set.append([all_lbls, all_bbox])
@@ -141,7 +142,8 @@ while counter1 < 9000:
     all_data = []
     all_lbls = []
     # Generate numbers
-    for t in range(max_chars):
+    max_steps = random.randint(4, max_chars)
+    for t in range(max_steps):
         idx  = random.randint(0, len(all_selections)-1)
         lbl  = all_selections[idx]
         data = image.generate_image(lbl)
@@ -171,13 +173,13 @@ while counter1 < 9000:
             h, w, _ = pix.shape
             # print(pix.shape)
             # Get BBox's
-            h1 = 10
+            h1 = random.randint(8, 20)
             w1 = prev_w
             h2 = h
             w2 = w
             all_bbox.append([w1, h1, w2, h2])
             # Paint Canvas
-            canvas[10:10+h, prev_w+2:prev_w+2+w, :] = pix
+            canvas[h1:h1+h, prev_w+2:prev_w+2+w, :] = pix
             prev_w += w
         # Append to training set
         train_set.append([all_lbls, all_bbox])
@@ -228,7 +230,8 @@ while counter1 < 15000:
     all_data = []
     all_lbls = []
     # Generate numbers
-    for t in range(max_chars):
+    max_steps = random.randint(4, max_chars)
+    for t in range(max_steps):
         idx  = random.randint(0, len(all_selections)-1)
         lbl  = all_selections[idx]
         data = image.generate_image(lbl)
@@ -258,13 +261,13 @@ while counter1 < 15000:
             h, w, _ = pix.shape
             # print(pix.shape)
             # Get BBox's
-            h1 = 10
+            h1 = random.randint(8, 20)
             w1 = prev_w
             h2 = h
             w2 = w
             all_bbox.append([w1, h1, w2, h2])
             # Paint Canvas
-            canvas[10:10+h, prev_w+2:prev_w+2+w, :] = pix
+            canvas[h1:h1+h, prev_w+2:prev_w+2+w, :] = pix
             prev_w += w
         # Append to training set
         valid_set.append([all_lbls, all_bbox])
@@ -315,7 +318,8 @@ while counter1 < 15000:
     all_data = []
     all_lbls = []
     # Generate numbers
-    for t in range(max_chars):
+    max_steps = random.randint(4, max_chars)
+    for t in range(max_steps):
         idx  = random.randint(0, len(all_selections)-1)
         lbl  = all_selections[idx]
         data = image.generate_image(lbl)
@@ -351,7 +355,7 @@ while counter1 < 15000:
             w2 = w
             all_bbox.append([w1, h1, w2, h2])
             # Paint Canvas
-            canvas[10:10+h, prev_w+2:prev_w+2+w, :] = pix
+            canvas[h1:h1+h, prev_w+2:prev_w+2+w, :] = pix
             prev_w += w
         # Append to training set
         test_set.append([all_lbls, all_bbox])
