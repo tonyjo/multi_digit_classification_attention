@@ -233,7 +233,7 @@ class Train(object):
             for e in range(self.n_epochs):
                 curr_loss = 0
                 start_t   = time.time()
-                for i in range(10):
+                for i in range(n_iters_per_epoch):
                     image_batch, grd_labels_batch, grd_bboxes_batch, grd_attn_batch = next(train_loader)
                     feed_dict = {self.model.images: image_batch,
                                  self.model.labels: grd_labels_batch,
