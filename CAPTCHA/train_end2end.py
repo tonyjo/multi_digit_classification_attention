@@ -301,7 +301,7 @@ def main():
                       image_height=64, grd_attn=False, mode='Valid')
     # Load Model
     model = Model(dim_feature=[672, 128], dim_hidden=128, n_time_step=8,
-                  alpha_c=10.0, image_height=64, image_width=200, mode='train')
+                  alpha_c=5.0, image_height=64, image_width=200, mode='train')
     # Load Trainer
     trainer = Train(model, data, val_data=val_data, n_epochs=1000, batch_size=64, val_batch_size=1,
                     update_rule='adam', learning_rate=0.0001, print_every=100, valid_freq=10,

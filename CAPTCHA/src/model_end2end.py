@@ -162,7 +162,7 @@ class Model(object):
             interm_loss_digit = self._softmax_cross_entropy(labels=self.labels[:, t, :], logits=captcha_pred)
             interm_loss_bbox  = self._mean_squared_error(grd_bboxes=self.bboxes[:, t, :], pred_bboxes=bbox_pred)
             # Collect loss
-            final_loss += tf.reduce_sum(interm_loss_digit) + tf.reduce_sum(interm_loss_digit)
+            final_loss += tf.reduce_sum(interm_loss_digit) + tf.reduce_sum(interm_loss_bbox)
 
         if self.alpha_c > 0:
             ## KL-loss
