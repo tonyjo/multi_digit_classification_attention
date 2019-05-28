@@ -156,7 +156,7 @@ class Train(object):
                 # Label
                 sample_label = np.argmax(grnd_labels[t][0][T])
                 # Predicted
-                pred_score = pred_cpthas[t][T][0]
+                pred_score   = np.argmax(pred_cpthas[t][T][0])
                 # Check sample
                 if sample_label != 62 or sample_label != 63:
                     if sample_cnt < sample_seq:
@@ -165,9 +165,9 @@ class Train(object):
                             sample_acc_prd += 1.0
                         # Update
                         sample_cnt += 1
-
+            # Increment Sequence Accuracy
             final_seq_acc_prd += sample_acc_prd/sample_seq
-
+            # Progress
             if t%2000 == 0:
                 print('Validation Prediction Completion..{%d/%d}' % (t, n_iters))
             count += 1.0
