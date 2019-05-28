@@ -13,6 +13,8 @@ class Train(object):
         self.model         = model
         self.data          = data
         self.val_data      = val_data
+        self.max_steps     = model.T
+        self.check_val     = kwargs.pop('check_val', 10)
         self.n_epochs      = kwargs.pop('n_epochs', 20)
         self.batch_size    = kwargs.pop('batch_size', 64)
         self.val_bth_size  = kwargs.pop('val_batch_size', 1)
@@ -95,7 +97,7 @@ class Train(object):
         for t in range(n_iters):
             sample_seq = 0.0
             sample_iou = 0.0
-            for T in range(max_steps):
+            for T in range(self.max_steps):
                 ## Ground
                 sample_left_grd  = grnd_bboxes[t][0][T][0]
                 sample_top_grd   = grnd_bboxes[t][0][T][1]
@@ -141,6 +143,7 @@ class Train(object):
 
     def pred_accuracy(self, grnd_labels, pred_cpthas):
         count = 0.0
+        n_iters = len(pred_cpthas)
         final_seq_acc_prd = 0.0
         # Run predictions
         for t in range(n_iters):
@@ -149,7 +152,7 @@ class Train(object):
             sample_seq = len(grnd_labels[t][0])
             sample_acc_prd = 0.0
             # Loop through steps
-            for T in range(max_steps):
+            for T in range(self.max_steps):
                 # Label
                 sample_label = np.argmax(grnd_labels[t][0][T])
                 # Predicted
@@ -158,14 +161,14 @@ class Train(object):
                 if sample_label != 62 or sample_label != 63:
                     if sample_cnt < sample_seq:
                         # Predictions
-                        if int( pred_score) == int(sample_label):
+                        if int(pred_score) == int(sample_label):
                             sample_acc_prd += 1.0
                         # Update
                         sample_cnt += 1
 
             final_seq_acc_prd += sample_acc_prd/sample_seq
 
-            if t%print_every == 0:
+            if t%2000 == 0:
                 print('Validation Prediction Completion..{%d/%d}' % (t, n_iters))
             count += 1.0
         #-----------------------------------------------------------------------
@@ -184,15 +187,11 @@ class Train(object):
         n_examples = self.data.max_length
         n_iters_per_epoch = int(np.ceil(float(n_examples)/self.batch_size))
         # Validation dataset
-        n_examples_val = self.valid_loader.max_length
+        n_examples_val = self.val_data.max_length
         valid_n_iters  = int(np.ceil(float(n_examples_val)/self.val_bth_size))
 
         # Build model with loss
-        loss = self.model.build_model()
-        # Reuse graph to build test model
-        tf.get_variable_scope().reuse_variables()
-        # Build model for inference
-        pred_bboxs_, pred_cptha_, alpha_list_ = self.model.build_test_model()
+        loss, pred_bboxs_, pred_cptha_, = self.model.build_model()
 
         # Global step
         global_step = tf.Variable(0, dtype=tf.int32, trainable=False)
@@ -205,7 +204,7 @@ class Train(object):
             optimizer = self.optimizer(learning_rate=decay_l_rate)
             grads     = tf.gradients(loss, tf.trainable_variables())
             grads_and_vars = list(zip(grads, tf.trainable_variables()))
-            train_op = optimizer.apply_gradients(grads_and_vars=grads_and_vars)
+            train_op = optimizer.apply_gradients(grads_and_vars=grads_and_vars, global_step=global_step)
         # Summary op
         tf.summary.scalar('batch_loss', loss)
         summary_op = tf.summary.merge_all()
@@ -234,13 +233,13 @@ class Train(object):
             for e in range(self.n_epochs):
                 curr_loss = 0
                 start_t   = time.time()
-                for i in range(n_iters_per_epoch):
+                for i in range(10):
                     image_batch, grd_labels_batch, grd_bboxes_batch, grd_attn_batch = next(train_loader)
                     feed_dict = {self.model.images: image_batch,
                                  self.model.labels: grd_labels_batch,
                                  self.model.bboxes: grd_bboxes_batch,
                                  self.model.gnd_attn: grd_attn_batch,
-                                 self.model.is_train: True
+                                 self.model.is_train: True,
                                  self.model.drop_prob: 0.5}
 
                     _, l, _ = sess.run([train_op, loss, incr_glbl_stp], feed_dict)
@@ -248,44 +247,43 @@ class Train(object):
 
                     if i%self.print_every == 0:
                         print('Epoch Completion..{%d/%d}' % (i, n_iters_per_epoch))
-
-                    if i%self.check_val == 0:
-                        pred_cpthas = []
-                        pred_bboxes = []
-                        grnd_bboxes = []
-                        grnd_labels = []
-                        for t in range(valid_n_iters):
-                            image_val_batch, grd_val_lables_batch, grd_val_bboxes_batch, _ = next(test_gen)
-                            feed_dict = {model.images: image_val_batch,
-                                         model.is_train: False,
-                                         model.drop_prob: 1.0}
-                            prediction_bbox, prediction_cptha = sess.run([pred_bboxs_, pred_cptha_], feed_dict)
-                            # Collect
-                            pred_bboxes.append(prediction_bbox)
-                            pred_cpthas.append(prediction_cptha)
-                            grnd_bboxes.append(grd_val_bboxes_batch)
-                            grnd_labels.append(grd_val_lables_batch)
-                            # Print every
-                            if i%2000 == 0:
-                                print('Inference Completion..{%d/%d}' % (t, valid_n_iters))
-                        #-----------------------------------------------------
-                        print('Inference Completion..{%d/%d}' % (valid_n_iters, valid_n_iters))
-                        print('Completed!')
-                        # IOU
-                        self.IOU(grnd_bboxes=grnd_bboxes, pred_bboxes=pred_bboxes)
-                        # Prediction Accuracy
-                        self.pred_accuracy(grnd_labels=grnd_labels, pred_cpthas=pred_cpthas)
                     # write summary for tensorboard visualization
                     if i % 10 == 0:
                         summary = sess.run(summary_op, feed_dict)
                         summary_writer.add_summary(summary, e*n_iters_per_epoch + i)
+                # Check validation
+                if e%self.check_val == 0:
+                    pred_cpthas = []
+                    pred_bboxes = []
+                    grnd_bboxes = []
+                    grnd_labels = []
+                    for t in range(valid_n_iters):
+                        image_val_batch, grd_val_lables_batch, grd_val_bboxes_batch = next(valid_loader)
+                        feed_dict = {self.model.images: image_val_batch,
+                                     self.model.is_train: False,
+                                     self.model.drop_prob: 1.0}
+                        prediction_bbox, prediction_cptha = sess.run([pred_bboxs_, pred_cptha_], feed_dict)
+                        # Collect
+                        pred_bboxes.append(prediction_bbox)
+                        pred_cpthas.append(prediction_cptha)
+                        grnd_bboxes.append(grd_val_bboxes_batch)
+                        grnd_labels.append(grd_val_lables_batch)
+                        # Print every
+                        if t%4000 == 0:
+                            print('Inference Completion..{%d/%d}' % (t, valid_n_iters))
+                    #-----------------------------------------------------
+                    print('Inference Completion..{%d/%d}' % (valid_n_iters, valid_n_iters))
+                    print('Completed!')
+                    # IOU
+                    self.IOU(grnd_bboxes=grnd_bboxes, pred_bboxes=pred_bboxes)
+                    # Prediction Accuracy
+                    self.pred_accuracy(grnd_labels=grnd_labels, pred_cpthas=pred_cpthas)
                 #---------------------------------------------------------------
                 print("Previous epoch loss: ", prev_loss)
                 print("Current epoch loss: ", curr_loss)
                 print("Elapsed time: ", time.time() - start_t)
                 prev_loss = curr_loss
                 #---------------------------------------------------------------
-
                 # Save model's parameters
                 if (e+1) % self.save_every == 0:
                     saver.save(sess, os.path.join(self.model_path, 'model'), global_step=e+1)
@@ -300,10 +298,10 @@ def main():
                       image_height=64, grd_attn=True, mode='Train')
     val_data = dataLoader(directory='./dataset/captcha', dataset_dir='val',\
                       dataset_name='val.txt', max_steps=6, image_width=200,\
-                      image_height=64, grd_attn=False, mode='Test')
+                      image_height=64, grd_attn=False, mode='Valid')
     # Load Model
     model = Model(dim_feature=[672, 128], dim_hidden=128, n_time_step=8,
-                  alpha_c=1.0, image_height=64, image_width=200, mode='train')
+                  alpha_c=10.0, image_height=64, image_width=200, mode='train')
     # Load Trainer
     trainer = Train(model, data, val_data=val_data, n_epochs=1000, batch_size=64, val_batch_size=1,
                     update_rule='adam', learning_rate=0.0001, print_every=100, valid_freq=10,

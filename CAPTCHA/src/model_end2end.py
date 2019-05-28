@@ -112,7 +112,7 @@ class Model(object):
             return out_logits
 
     def build_model(self):
-        features, layer_4 = net(self.images, mode=self.mode)
+        features, layer_4 = net(self.images, mode=self.is_train)
         _, H1, W1, D1 = features.get_shape().as_list()
         _, H2, W2, D2 = layer_4.get_shape().as_list()
         features = tf.reshape(features, [-1, self.L, self.D])
@@ -127,6 +127,8 @@ class Model(object):
         batch_size = tf.shape(features)[0]
         final_loss = 0.0
         alpha_list = []
+        pred_bboxs = []
+        pred_cptha = []
         lstm_cell  = tf.nn.rnn_cell.BasicLSTMCell(num_units=self.H)
         lstm_cell  = tf.contrib.rnn.DropoutWrapper(lstm_cell,\
                                                    input_keep_prob=self.drop_prob)
@@ -153,6 +155,9 @@ class Model(object):
             interm_captcha_pred = tf.nn.dropout(interm_captcha_pred, keep_prob=self.drop_prob)
             captcha_pred = self._prediction_layer(name_scope='captcha_pred_layer',\
                                                   inputs=interm_captcha_pred, outputs=64, H=512, reuse=(t!=0))
+            # Collects
+            pred_bboxs.append(bbox_pred)
+            pred_cptha.append(captcha_pred)
             # Loss
             interm_loss_digit = self._softmax_cross_entropy(labels=self.labels[:, t, :], logits=captcha_pred)
             interm_loss_bbox  = self._mean_squared_error(grd_bboxes=self.bboxes[:, t, :], pred_bboxes=bbox_pred)
@@ -182,7 +187,7 @@ class Model(object):
                     print(tf_var)
                     final_loss = final_loss + (self.l2 * tf.nn.l2_loss(var))
 
-        return final_loss/tf.to_float(batch_size)
+        return final_loss/tf.to_float(batch_size), pred_bboxs, pred_cptha,
 
     def build_test_model(self):
         features, layer_4 = net(self.images, mode=self.is_train)

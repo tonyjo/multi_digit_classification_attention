@@ -49,6 +49,9 @@ class dataLoader(object):
                 if self.mode == 'Test':
                     path = int(path[0:-4]) + 55000
                     path = str(path) + '.png'
+                if self.mode == 'Valid':
+                    path = int(path[0:-4]) + 40000
+                    path = str(path) + '.png'
                 label = all_selections.index(label) # Convert to label category
                 interm_data.append([path, label, int(w1), int(h1), int(w2), int(h2)])
 
@@ -67,6 +70,7 @@ class dataLoader(object):
         self.possible_pred = len(all_selections)
 
         print('All data Loaded!')
+        print
 
     def gaussian2d(self, sup, scales):
         """
