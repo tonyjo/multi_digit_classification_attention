@@ -197,7 +197,7 @@ with open(curated_textfile, 'w') as ft:
             ## Curate labels to match new image shape
             # Collect samples
             samples = []
-            for index_into in range(total_samples):
+            for index_into in range(max_steps):
                 if index_into == 0:
                     sample_label = 0
                     sample_left  = 0

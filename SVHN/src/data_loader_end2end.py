@@ -208,7 +208,7 @@ class dataLoader(object):
                     sample_height = sample_data[idx][4] * 1.0
                     # Start State
                     if sample_label == 0:
-                        one_hot_label = np.zeros(self.max_steps)
+                        one_hot_label = np.zeros(12)
                         one_hot_label[sample_label] = 1.0
                         sample_left   = 0.0
                         sample_top    = 0.0
@@ -218,7 +218,7 @@ class dataLoader(object):
                             attn_mask = start_attn_mask
                     # End State
                     elif sample_label == 11:
-                        one_hot_label = np.zeros(self.max_steps)
+                        one_hot_label = np.zeros(12)
                         one_hot_label[sample_label] = 1.0
                         sample_left   = self.image_width - 3
                         sample_top    = self.image_height - 3
@@ -228,7 +228,7 @@ class dataLoader(object):
                             attn_mask = stop_attn_mask
                     else:
                         # Extract and create ground labels
-                        one_hot_label = np.zeros(self.possible_pred+2)
+                        one_hot_label = np.zeros(12)
                         one_hot_label[sample_label] = 1.0
                         # Rescale axis to resized image
                         sample_left   = np.ceil((sample_left    * self.image_width)/org_img_wdth)
