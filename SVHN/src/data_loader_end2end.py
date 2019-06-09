@@ -189,7 +189,6 @@ class dataLoader(object):
                 sample_img_path = os.path.join(self.directory, self.dataset_dir, sample_data[0])
                 image           = cv2.imread(sample_img_path)
                 org_img_hgth, org_img_wdth, _ = image.shape
-                image           = cv2.resize(image, (self.image_width, self.image_height))
                 # if self.mode != 'Train':
                 #     image_batch.append(image)
                 # image_norm      = deepcopy(image)
@@ -230,11 +229,6 @@ class dataLoader(object):
                         # Extract and create ground labels
                         one_hot_label = np.zeros(12)
                         one_hot_label[sample_label] = 1.0
-                        # Rescale axis to resized image
-                        sample_left   = np.ceil((sample_left    * self.image_width)/org_img_wdth)
-                        sample_top    = np.ceil((sample_top     * self.image_height)/org_img_hgth)
-                        sample_width  = np.floor((sample_width  * self.image_width)/org_img_wdth)
-                        sample_height = np.floor((sample_height * self.image_height)/org_img_hgth)
                         if self.grd_attn == True:
                             # Then rescale axis to the final feature map size
                             sple_left   = int(np.ceil((sample_left    * ground_attention_size[1])/self.image_width))

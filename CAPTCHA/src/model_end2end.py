@@ -203,9 +203,9 @@ class Model(object):
         print('CNN build model sucess!')
 
         batch_size = tf.shape(features)[0]
+        alpha_list = []
         pred_bboxs = []
         pred_cptha = []
-        alpha_list = []
         lstm_cell  = tf.nn.rnn_cell.BasicLSTMCell(num_units=self.H)
         lstm_cell  = tf.contrib.rnn.DropoutWrapper(lstm_cell,\
                                                    input_keep_prob=self.drop_prob)
@@ -232,10 +232,8 @@ class Model(object):
             interm_captcha_pred = tf.nn.dropout(interm_captcha_pred, keep_prob=self.drop_prob)
             captcha_pred = self._prediction_layer(name_scope='captcha_pred_layer',\
                                                   inputs=interm_captcha_pred, outputs=64, H=512, reuse=(t!=0))
-            captcha_pred = tf.nn.softmax(logits=captcha_pred)
-            captcha_pred = tf.argmax(input=captcha_pred, axis=-1)
             # Collects
             pred_bboxs.append(bbox_pred)
             pred_cptha.append(captcha_pred)
-
+ 
         return pred_bboxs, pred_cptha, alpha_list
