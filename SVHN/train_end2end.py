@@ -247,7 +247,7 @@ class Train(object):
 
                     if i%self.print_every == 0:
                         print('Epoch Completion..{%d/%d}' % (i, n_iters_per_epoch))
-                    # write summary for tensorboard visualization
+                    write summary for tensorboard visualization
                     if i % 10 == 0:
                         summary = sess.run(summary_op, feed_dict)
                         summary_writer.add_summary(summary, e*n_iters_per_epoch + i)
@@ -269,7 +269,7 @@ class Train(object):
                         grnd_bboxes.append(grd_val_bboxes_batch)
                         grnd_labels.append(grd_val_lables_batch)
                         # Print every
-                        if t%4000 == 0:
+                        if t%1000 == 0:
                             print('Inference Completion..{%d/%d}' % (t, valid_n_iters))
                     #-----------------------------------------------------
                     print('Inference Completion..{%d/%d}' % (valid_n_iters, valid_n_iters))
@@ -293,10 +293,10 @@ class Train(object):
 #-------------------------------------------------------------------------------
 def main():
     # Load train/val dataset
-    data = dataLoader(directory='./dataset/captcha', dataset_dir='train',\
+    data = dataLoader(directory='./dataset', dataset_dir='train_cropped',\
                       dataset_name='train.txt', max_steps=6, image_width=64,\
                       image_height=64, grd_attn=True, mode='Train')
-    val_data = dataLoader(directory='./dataset/captcha', dataset_dir='val',\
+    val_data = dataLoader(directory='./dataset', dataset_dir='train_cropped',\
                       dataset_name='val.txt', max_steps=6, image_width=64,\
                       image_height=64, grd_attn=False, mode='Valid')
     # Load Model

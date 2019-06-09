@@ -58,7 +58,7 @@ class dataLoader(object):
 
         self.all_data   = all_data
         self.max_length = len(self.all_data)
-        self.possible_pred = len(all_selections)
+        self.possible_pred = len(all_data)
 
         print('All data Loaded!')
 
@@ -96,6 +96,7 @@ class dataLoader(object):
             delta_w = (sample_left + sample_width) - sample_image_width
             sample_width -= delta_w
 
+
         if sample_top + sample_height >= sample_image_height:
             delta_h = (sample_top + sample_height) - sample_image_height
             sample_height -= delta_h
@@ -114,19 +115,22 @@ class dataLoader(object):
                 sample_height += 1
 
         # Generate gaussian
-        gaussain = self.gaussian2d((sample_width, sample_height), scales)
-        gaussain_normalized = (gaussain - np.min(gaussain))/\
-                              (np.max(gaussain) - np.min(gaussain))
-        h_gauss_norm, w_gauss_norm = gaussain_normalized.shape
-        gaussain_normalized = gaussain_normalized.flatten()
-        gaussain_normalized = self.softmax(gaussain_normalized)
-        gaussain_normalized = np.reshape(gaussain_normalized, (h_gauss_norm, w_gauss_norm))
+        gaussain = self.gaussian2d((abs(sample_width), abs(sample_height)), scales)
+        try:
+            gaussain_normalized = (gaussain - np.min(gaussain))/(np.max(gaussain) - np.min(gaussain))
+            h_gauss_norm, w_gauss_norm = gaussain_normalized.shape
+            gaussain_normalized = gaussain_normalized.flatten()
+            gaussain_normalized = self.softmax(gaussain_normalized)
+            gaussain_normalized = np.reshape(gaussain_normalized, (h_gauss_norm, w_gauss_norm))
 
-        sample_attention = np.zeros((sample_image_height, sample_image_width)) * 0.0
+            sample_attention = np.zeros((sample_image_height, sample_image_width)) * 0.0
 
-        sample_attention[sample_top:sample_top+sample_height, sample_left:sample_left+sample_width] = gaussain_normalized
+            sample_attention[sample_top:sample_top+sample_height, sample_left:sample_left+sample_width] = gaussain_normalized
 
-        return sample_attention
+            return sample_attention
+
+        except ValueError:
+            print(sample_width, sample_height, gaussain.shape)
 
     def generate_start_attention_mask(self, attn_size):
         """
@@ -142,7 +146,7 @@ class dataLoader(object):
         Create an attention mask for the stop state.
         """
         x = np.zeros(attn_size) * 0.0
-        x[-1, -1] = 1.0
+        x[-2, -2] = 1.0
 
         return x
 
@@ -186,7 +190,8 @@ class dataLoader(object):
             # Generate training batch
             for _ in range(batch_size):
                 sample_data     = next(data_gen)
-                sample_img_path = os.path.join(self.directory, self.dataset_dir, sample_data[0])
+                #print(sample_data[0][0])
+                sample_img_path = os.path.join(self.directory, self.dataset_dir, sample_data[0][0])
                 image           = cv2.imread(sample_img_path)
                 org_img_hgth, org_img_wdth, _ = image.shape
                 # if self.mode != 'Train':
@@ -200,11 +205,7 @@ class dataLoader(object):
                 all_sample_labl = []
                 for idx in range((self.max_steps)):
                     # Extract ground boxes-- sample_left, sample_top, sample_width, sample_height
-                    sample_label  = int(sample_data[idx][0])
-                    sample_left   = sample_data[idx][1] * 1.0
-                    sample_top    = sample_data[idx][2] * 1.0
-                    sample_width  = sample_data[idx][3] * 1.0
-                    sample_height = sample_data[idx][4] * 1.0
+                    sample_label = int(sample_data[idx][1])
                     # Start State
                     if sample_label == 0:
                         one_hot_label = np.zeros(12)
@@ -219,7 +220,7 @@ class dataLoader(object):
                     elif sample_label == 11:
                         one_hot_label = np.zeros(12)
                         one_hot_label[sample_label] = 1.0
-                        sample_left   = self.image_width - 3
+                        sample_left   = self.image_width  - 3
                         sample_top    = self.image_height - 3
                         sample_width  = 1.0
                         sample_height = 1.0
@@ -229,12 +230,16 @@ class dataLoader(object):
                         # Extract and create ground labels
                         one_hot_label = np.zeros(12)
                         one_hot_label[sample_label] = 1.0
+                        sample_left   = abs(sample_data[idx][2]) * 1.0
+                        sample_top    = abs(sample_data[idx][3]) * 1.0
+                        sample_width  = abs(sample_data[idx][4]) * 1.0
+                        sample_height = abs(sample_data[idx][5]) * 1.0
                         if self.grd_attn == True:
                             # Then rescale axis to the final feature map size
-                            sple_left   = int(np.ceil((sample_left    * ground_attention_size[1])/self.image_width))
-                            sple_top    = int(np.ceil((sample_top     * ground_attention_size[0])/self.image_height))
-                            sple_width  = int(np.floor((sample_width  * ground_attention_size[1])/self.image_width))
-                            sple_heigth = int(np.floor((sample_height * ground_attention_size[0])/self.image_height))
+                            sple_left   = int(abs(np.ceil((sample_left    * ground_attention_size[1])/org_img_wdth)))
+                            sple_top    = int(abs(np.ceil((sample_top     * ground_attention_size[0])/org_img_hgth)))
+                            sple_width  = int(abs(np.floor((sample_width  * ground_attention_size[1])/org_img_wdth)))
+                            sple_heigth = int(abs(np.floor((sample_height * ground_attention_size[0])/org_img_hgth)))
                             # Generate mask
                             attn_mask   = self.generate_ground_gaussian_attention_mask(ground_attention_size,\
                                                          sple_top, sple_heigth, sple_left, sple_width)
