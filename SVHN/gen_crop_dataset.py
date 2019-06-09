@@ -7,7 +7,7 @@ import numpy as np
 from copy import deepcopy
 
 parser = argparse.ArgumentParser()
-parser.add_argument("--dataset_type", type=str, help="train/test")
+parser.add_argument("--dataset_type", type=str, help="extra/train/val/test")
 parser.add_argument("--dataset_dir",  type=str, default="./dataset")
 parser.add_argument("--max_steps",    type=int, default=6, help="max steps")
 parser.add_argument("--img_height",   type=int, default=64, help="image height")
@@ -138,12 +138,9 @@ for j in range(f['/digitStruct/bbox'].shape[0]):
 #for j in range(1000):
     img_name = get_name(j, f)
     row_dict = get_bbox(j, f)
-
     all_data.append([img_name, row_dict])
-
     if j%4000 == 0:
         print('Completion..{%d/%d}' % (j, f['/digitStruct/bbox'].shape[0]))
-
 print('Completion..{%d/%d}' % (f['/digitStruct/bbox'].shape[0], f['/digitStruct/bbox'].shape[0]))
 print('Completed!')
 
@@ -161,12 +158,10 @@ with open(curated_textfile, 'w') as ft:
             sample_heigt_org, sample_width_org, _ = sample_image.shape
             # Get how many digits:
             total_samples = np.array(all_data[sample_index][1]).shape[1]
-
             #-------------------------------------------------------------------
             ## Get bounding box encompassing all digits
             low_left, low_top, high_width, high_height = biggest_box(all_data=all_data,\
                                   sample_index=sample_index, total_samples=total_samples)
-
             #-------------------------------------------------------------------
             ## Crop
             # Obtain the spatial extend to crop
@@ -178,7 +173,6 @@ with open(curated_textfile, 'w') as ft:
             # Expand in y-direction
             ly, nH = new_y(low_y=low_top, delta_H=high_height_expand,\
                            height=high_height, image_height=sample_heigt_org)
-
             #------- X-axis shift -------
             for i in range(total_samples):
                 # Update lower bound-- left
@@ -187,10 +181,8 @@ with open(curated_textfile, 'w') as ft:
             for i in range(total_samples):
                 # Update lower bound-- top
                 all_data_copy[sample_index][1][2][i] -= ly
-
             # Crop image
             sample_image_copy = sample_image_copy_[int(ly):int(ly + nH), int(lx):int(lx + nW), :]
-
             #-------------------------------------------------------------------
             ## Resize image
             sample_heigt_org_rz, sample_width_org_rz, _ = sample_image_copy.shape
@@ -201,32 +193,29 @@ with open(curated_textfile, 'w') as ft:
             else:
                 # Zooming
                 smpl_img_rz = cv2.resize(sample_image_copy, img_size, interpolation = cv2.INTER_LINEAR)
-
             #-------------------------------------------------------------------
             ## Curate labels to match new image shape
             # Collect samples
             samples = []
-
-            for index_into in range(max_steps):
+            for index_into in range(total_samples):
                 if index_into == 0:
                     sample_label = 0
-                    sample_left  = 1
-                    sample_top   = 1
+                    sample_left  = 0
+                    sample_top   = 0
                     sample_width = 1
                     sample_heigt = 1
                 elif index_into > total_samples:
                     sample_label = 11
-                    sample_left  = 0
-                    sample_top   = 0
-                    sample_width = 0
-                    sample_heigt = 0
+                    sample_left  = img_size[0] - 2
+                    sample_top   = img_size[1] - 2
+                    sample_width = 1
+                    sample_heigt = 1
                 else:
                     sample_label = int(all_data_copy[sample_index][1][0][index_into-1])
-                    sample_left  = abs(int((all_data_copy[sample_index][1][1][index_into-1] * img_size[0])/sample_width_org_rz))
-                    sample_top   = abs(int((all_data_copy[sample_index][1][2][index_into-1] * img_size[1])/sample_heigt_org_rz))
-                    sample_width = abs(int((all_data_copy[sample_index][1][3][index_into-1] * img_size[0])/sample_width_org_rz))
-                    sample_heigt = abs(int((all_data_copy[sample_index][1][4][index_into-1] * img_size[1])/sample_heigt_org_rz))
-
+                    sample_left  = int(np.ceil((all_data_copy[sample_index][1][1][index_into-1]  * img_size[0])/sample_width_org_rz))
+                    sample_top   = int(np.ceil((all_data_copy[sample_index][1][2][index_into-1]  * img_size[1])/sample_heigt_org_rz))
+                    sample_width = int(np.floor((all_data_copy[sample_index][1][3][index_into-1] * img_size[0])/sample_width_org_rz))
+                    sample_heigt = int(np.floor((all_data_copy[sample_index][1][4][index_into-1] * img_size[1])/sample_heigt_org_rz))
                 # Append
                 samples.append([all_data_copy[sample_index][0][:-4], sample_label, sample_left, sample_top, sample_width, sample_heigt])
             #-------------------------------------------------------------------
@@ -257,11 +246,10 @@ with open(curated_textfile, 'w') as ft:
             #-------------------------------------------------------------------
             if sample_index%4000 == 0:
                 print('Completion..{%d/%d}' % (sample_index, len(all_data)))
-
+        #-----------------------------------------------------------------------
         except ValueError:
             print('Ignoring data: ', sample_imgph)
-
-#------------------------------------------------------------------------------
+#-------------------------------------------------------------------------------
 print('Completion..{%d/%d}' % (len(all_data), len(all_data)))
 print('Completed!')
 # Close
@@ -269,6 +257,5 @@ ft.close()
 if dataset_type == "train":
     vt.close()
     print('Total validation data = %d' % (total_val_data))
-
 print('Total %s data = %d' % (dataset_type, total_data))
 #------------------------------------------------------------------------------
