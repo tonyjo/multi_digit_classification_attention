@@ -9,6 +9,7 @@ from copy import deepcopy
 parser = argparse.ArgumentParser()
 parser.add_argument("--dataset_type", type=str, help="extra/train/val/test")
 parser.add_argument("--dataset_dir",  type=str, default="./dataset")
+parser.add_argument("--gen_val_data", type=str, default="True")
 parser.add_argument("--max_steps",    type=int, default=6, help="max steps")
 parser.add_argument("--img_height",   type=int, default=64, help="image height")
 parser.add_argument("--img_width",    type=int, default=64, help="image width")
@@ -26,6 +27,7 @@ np.random.seed(8964)
 
 dataset_type     = args.dataset_type # Change to train/test
 dataset_dir      = args.dataset_dir
+gen_val_data     = args.gen_val_data
 curated_dataset  = os.path.join(dataset_dir, dataset_type + '_cropped')
 curated_textfile = os.path.join(dataset_dir, dataset_type + '.txt')
 file_path        = './dataset/%s/' % (dataset_type)
@@ -35,10 +37,12 @@ img_size         = (args.img_width, args.img_height) # (width, height)
 max_steps        = args.max_steps
 total_data       = 0
 
-if dataset_type == "train":
+if dataset_type == "train" and gen_val_data == "True":
     curated_val_textfile = os.path.join(dataset_dir, 'val.txt')
     vt = open(curated_val_textfile, 'w')
     total_val_data = 0
+elif dataset_type == "train" and gen_val_data == "False":
+    curated_textfile = os.path.join(dataset_dir, dataset_type + '_noval.txt')
 
 if os.path.exists(curated_dataset) == False:
     os.mkdir(curated_dataset)
@@ -225,7 +229,7 @@ with open(curated_textfile, 'w') as ft:
             # Save
             cv2.imwrite(new_sample_image_path, smpl_img_rz)
 
-            if dataset_type == "train":
+            if dataset_type == "train" gen_val_data == "True":
                 if random_value < 0.1:
                     # Write to validation
                     vt.write(str(samples))

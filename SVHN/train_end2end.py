@@ -43,7 +43,7 @@ class Train(object):
     def bbox_threshold(self, left, top, width, height):
         valid_box = False
         # If the threshold box is less than 30
-        if width * height < 30:
+        if width * height < 15:
             valid_box = False
         elif left == 0 and top == 0 and\
              width == 0 and height == 0:
@@ -132,7 +132,7 @@ class Train(object):
                         sample_iou += self.bb_intersection_over_union(boxA, boxB)
             # Print Every
             if t%2000 == 0:
-                print(' Validation IOU Completion..{%d/%d}' % (t, n_iters))
+                print('Validation IOU Completion..{%d/%d}' % (t, n_iters))
             final_IOU_score += sample_iou/sample_seq
             count += 1.0
         #-----------------------------------------------------------------------
@@ -247,7 +247,7 @@ class Train(object):
 
                     if i%self.print_every == 0:
                         print('Epoch Completion..{%d/%d}' % (i, n_iters_per_epoch))
-                    write summary for tensorboard visualization
+                    # write summary for tensorboard visualization
                     if i % 10 == 0:
                         summary = sess.run(summary_op, feed_dict)
                         summary_writer.add_summary(summary, e*n_iters_per_epoch + i)
@@ -293,19 +293,19 @@ class Train(object):
 #-------------------------------------------------------------------------------
 def main():
     # Load train/val dataset
-    data = dataLoader(directory='./dataset', dataset_dir='train_cropped',\
-                      dataset_name='train.txt', max_steps=6, image_width=64,\
+    data = dataLoader(directory='./dataset', dataset_dir='extra_cropped',\
+                      dataset_name='extra.txt', max_steps=6, image_width=64,\
                       image_height=64, grd_attn=True, mode='Train')
     val_data = dataLoader(directory='./dataset', dataset_dir='train_cropped',\
                       dataset_name='val.txt', max_steps=6, image_width=64,\
                       image_height=64, grd_attn=False, mode='Valid')
     # Load Model
     model = Model(dim_feature=[196, 128], dim_hidden=128, n_time_step=6,
-                  alpha_c=5.0, image_height=64, image_width=64, mode='train')
+                  alpha_c=1.0, image_height=64, image_width=64, mode='train')
     # Load Trainer
     trainer = Train(model, data, val_data=val_data, n_epochs=1000, batch_size=64, val_batch_size=1,
-                    update_rule='adam', learning_rate=0.0001, print_every=100, valid_freq=10,
-                    save_every=5, pretrained_model=None, model_path='model/lstm3/', log_path='log3/')
+                    update_rule='adam', learning_rate=0.0001, print_every=1000, valid_freq=10,
+                    save_every=5, pretrained_model='model/lstm3/model-300', model_path='model/lstm4/', log_path='log4/')
     # Begin Training
     trainer.train()
 #-------------------------------------------------------------------------------
