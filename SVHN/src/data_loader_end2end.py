@@ -194,8 +194,8 @@ class dataLoader(object):
                 sample_img_path = os.path.join(self.directory, self.dataset_dir, sample_data[0][0])
                 image           = cv2.imread(sample_img_path)
                 org_img_hgth, org_img_wdth, _ = image.shape
-                # if self.mode != 'Train':
-                #     image_batch.append(image)
+                if self.mode != 'Train':
+                    image_batch.append(image)
                 # image_norm      = deepcopy(image)
                 # Set image between -1 and 1
                 image_norm = image /127.5 - 1.0
@@ -250,7 +250,7 @@ class dataLoader(object):
                     all_sample_data.append([sample_left, sample_top, sample_width, sample_height])
                     all_sample_labl.append(one_hot_label)
                 # Append to generated batch
-                # image_batch.append(image)
+                image_batch.append(image)
                 if self.grd_attn == True:
                     grd_attnMk_batch.append(all_sample_attn)
                 image_batch_norm.append(image_norm)
@@ -262,4 +262,4 @@ class dataLoader(object):
                 yield np.array(image_batch_norm), np.array(grd_lables_batch), np.array(grd_bboxes_batch), np.array(grd_attnMk_batch)
             else:
                 # yield np.array(image_batch), np.array(grd_lables_batch), np.array(image_batch_norm), np.array(grd_bboxes_batch)
-                yield np.array(image_batch_norm), np.array(grd_lables_batch), np.array(grd_bboxes_batch)
+                yield np.array(image_batch_norm), np.array(image_batch), np.array(grd_lables_batch), np.array(grd_bboxes_batch)

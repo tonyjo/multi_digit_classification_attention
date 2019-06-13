@@ -231,7 +231,7 @@ class Model(object):
                                                          outputs=512, H=[D1, D2], reuse=(t!=0))
             interm_captcha_pred = tf.nn.dropout(interm_captcha_pred, keep_prob=self.drop_prob)
             captcha_pred = self._prediction_layer(name_scope='captcha_pred_layer',\
-                                                  inputs=interm_captcha_pred, outputs=64, H=512, reuse=(t!=0))
+                                                  inputs=interm_captcha_pred, outputs=12, H=512, reuse=(t!=0))
             # Collects
             pred_bboxs.append(bbox_pred)
             pred_cptha.append(captcha_pred)

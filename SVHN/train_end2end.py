@@ -258,7 +258,7 @@ class Train(object):
                     grnd_bboxes = []
                     grnd_labels = []
                     for t in range(valid_n_iters):
-                        image_val_batch, grd_val_lables_batch, grd_val_bboxes_batch = next(valid_loader)
+                        image_val_batch, _, grd_val_lables_batch, grd_val_bboxes_batch = next(valid_loader)
                         feed_dict = {self.model.images: image_val_batch,
                                      self.model.is_train: False,
                                      self.model.drop_prob: 1.0}
