@@ -68,7 +68,7 @@ class Model_Baseline(object):
         ZS5_loss = self.softmax_cross_entropy(labels=self.labels_ZS5, logits=Z_S5)
         ZS6_loss = self.softmax_cross_entropy(labels=self.labels_ZS6, logits=Z_S6)
         # Collect loss
-        final_loss = Z_L_loss + ZS1_loss + ZS2_loss +ZS3_loss + ZS4_loss + ZS5_loss + ZS6_loss
+        final_loss = Z_L_loss + ZS1_loss + ZS2_loss + ZS3_loss + ZS4_loss + ZS5_loss + ZS6_loss
 
         # L2-regularization
         if self.l2 > 0:
