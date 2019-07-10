@@ -42,6 +42,7 @@ if dataset_type == "train" and gen_val_data == "True":
     vt = open(curated_val_textfile, 'w')
     total_val_data = 0
 elif dataset_type == "train" and gen_val_data == "False":
+    curated_dataset  = os.path.join(dataset_dir, dataset_type + '_noval_cropped')
     curated_textfile = os.path.join(dataset_dir, dataset_type + '_noval.txt')
 
 if os.path.exists(curated_dataset) == False:
@@ -229,7 +230,7 @@ with open(curated_textfile, 'w') as ft:
             # Save
             cv2.imwrite(new_sample_image_path, smpl_img_rz)
 
-            if dataset_type == "train" gen_val_data == "True":
+            if dataset_type == "train" and gen_val_data == "True":
                 if random_value < 0.1:
                     # Write to validation
                     vt.write(str(samples))
@@ -258,7 +259,7 @@ print('Completion..{%d/%d}' % (len(all_data), len(all_data)))
 print('Completed!')
 # Close
 ft.close()
-if dataset_type == "train":
+if dataset_type == "train"  and gen_val_data == "True":
     vt.close()
     print('Total validation data = %d' % (total_val_data))
 print('Total %s data = %d' % (dataset_type, total_data))

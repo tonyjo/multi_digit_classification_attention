@@ -195,6 +195,7 @@ class Train(object):
 
         # Global step
         global_step = tf.Variable(0, dtype=tf.int32, trainable=False)
+        initial_global_step = tf.assign(global_step, 0)
 
         # Train op
         with tf.name_scope('optimizer'):
@@ -228,6 +229,7 @@ class Train(object):
             if self.pretrained_model is not None:
                 print("Start training with pretrained Model..")
                 saver.restore(sess, self.pretrained_model)
+                sess.run(initial_global_step)
 
             prev_loss = -1
             for e in range(self.n_epochs):
@@ -269,7 +271,7 @@ class Train(object):
                         grnd_bboxes.append(grd_val_bboxes_batch)
                         grnd_labels.append(grd_val_lables_batch)
                         # Print every
-                        if t%1000 == 0:
+                        if t%2000 == 0:
                             print('Inference Completion..{%d/%d}' % (t, valid_n_iters))
                     #-----------------------------------------------------
                     print('Inference Completion..{%d/%d}' % (valid_n_iters, valid_n_iters))
@@ -293,19 +295,19 @@ class Train(object):
 #-------------------------------------------------------------------------------
 def main():
     # Load train/val dataset
-    data = dataLoader(directory='./dataset', dataset_dir='extra_cropped',\
-                      dataset_name='extra.txt', max_steps=6, image_width=64,\
+    data = dataLoader(directory='./dataset', dataset_dir='train_noval_cropped',\
+                      dataset_name='train_noval.txt', max_steps=6, image_width=64,\
                       image_height=64, grd_attn=True, mode='Train')
-    val_data = dataLoader(directory='./dataset', dataset_dir='train_cropped',\
-                      dataset_name='val.txt', max_steps=6, image_width=64,\
-                      image_height=64, grd_attn=False, mode='Valid')
+    val_data = dataLoader(directory='./dataset', dataset_dir='test_cropped',\
+                      dataset_name='test.txt', max_steps=6, image_width=64,\
+                      image_height=64, grd_attn=False, mode='Test')
     # Load Model
     model = Model(dim_feature=[196, 128], dim_hidden=128, n_time_step=6,
                   alpha_c=1.0, image_height=64, image_width=64, mode='train')
     # Load Trainer
     trainer = Train(model, data, val_data=val_data, n_epochs=1000, batch_size=64, val_batch_size=1,
-                    update_rule='adam', learning_rate=0.0001, print_every=1000, valid_freq=10,
-                    save_every=5, pretrained_model='model/lstm3/model-300', model_path='model/lstm4/', log_path='log4/')
+                    update_rule='adam', learning_rate=0.00005, print_every=100, valid_freq=10,
+                    save_every=5, pretrained_model='model/lstm4/model-230', model_path='model/lstm5/', log_path='log5/')
     # Begin Training
     trainer.train()
 #-------------------------------------------------------------------------------
