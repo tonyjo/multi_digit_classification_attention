@@ -75,11 +75,11 @@ class Train(object):
         with tf.name_scope('optimizer'):
             decay_l_rate = tf.train.exponential_decay(self.learning_rate, global_step,\
                                                        50000, 0.9, staircase=True)
-            incr_glbl_stp = tf.assign(global_step, global_step+1)
-            optimizer = self.optimizer(learning_rate=decay_l_rate)
-            grads     = tf.gradients(loss, tf.trainable_variables())
+            incr_glbl_stp  = tf.assign(global_step, global_step+1)
+            optimizer      = self.optimizer(learning_rate=decay_l_rate)
+            grads          = tf.gradients(loss, tf.trainable_variables())
             grads_and_vars = list(zip(grads, tf.trainable_variables()))
-            train_op = optimizer.apply_gradients(grads_and_vars=grads_and_vars, global_step=global_step)
+            train_op       = optimizer.apply_gradients(grads_and_vars=grads_and_vars, global_step=global_step)
         # Summary op
         tf.summary.scalar('batch_loss', loss)
         summary_op = tf.summary.merge_all()
