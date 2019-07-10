@@ -6,7 +6,7 @@ import time
 import numpy as np
 import tensorflow as tf
 from src.data_loader_baseline import dataLoader
-from src.model_end2end import Model
+from src.model_baseline import Model_Baseline
 
 class Train(object):
     def __init__(self, model, data, val_data, **kwargs):
@@ -53,43 +53,6 @@ class Train(object):
 
         return valid_box
 
-    def pred_accuracy(self, grnd_labels, pred_cpthas):
-        count = 0.0
-        n_iters = len(pred_cpthas)
-        final_seq_acc_prd = 0.0
-        # Run predictions
-        for t in range(n_iters):
-            # Get image
-            sample_cnt = 0
-            sample_seq = len(grnd_labels[t][0])
-            sample_acc_prd = 0.0
-            # Loop through steps
-            for T in range(self.max_steps):
-                # Label
-                sample_label = np.argmax(grnd_labels[t][0][T])
-                # Predicted
-                pred_score   = np.argmax(pred_cpthas[t][T][0])
-                # Check sample
-                if sample_label != 62 or sample_label != 63:
-                    if sample_cnt < sample_seq:
-                        # Predictions
-                        if int(pred_score) == int(sample_label):
-                            sample_acc_prd += 1.0
-                        # Update
-                        sample_cnt += 1
-            # Increment Sequence Accuracy
-            final_seq_acc_prd += sample_acc_prd/sample_seq
-            # Progress
-            if t%2000 == 0:
-                print('Validation Prediction Completion..{%d/%d}' % (t, n_iters))
-            count += 1.0
-        #-----------------------------------------------------------------------
-        print('Validation Prediction Completion..{%d/%d}' % (n_iters, n_iters))
-        print('Completed!')
-        print('Validation Sequence Classification Accuracy: ',\
-                              np.round((final_seq_acc_prd/count), 4) * 100, '%')
-        #-----------------------------------------------------------------------
-
     def train(self):
         # Train Data Loader
         train_loader = self.data.gen_data_batch(self.batch_size)
@@ -103,7 +66,7 @@ class Train(object):
         valid_n_iters  = int(np.ceil(float(n_examples_val)/self.val_bth_size))
 
         # Build model with loss
-        loss, pred_bboxs_, pred_cptha_, = self.model.build_model()
+        loss, Z_L, Z_S1, Z_S2, Z_S3, Z_S4, Z_S5, Z_S6 = self.model.build_model()
 
         # Global step
         global_step = tf.Variable(0, dtype=tf.int32, trainable=False)
@@ -146,14 +109,18 @@ class Train(object):
                 curr_loss = 0
                 start_t   = time.time()
                 for i in range(n_iters_per_epoch):
-                    image_batch, grd_labels_batch, grd_bboxes_batch, grd_attn_batch = next(train_loader)
+                    image_batch, grd_labels_batch, grd_mxstep_batch = next(train_loader)
                     feed_dict = {self.model.images: image_batch,
-                                 self.model.labels: grd_labels_batch,
-                                 self.model.bboxes: grd_bboxes_batch,
-                                 self.model.gnd_attn: grd_attn_batch,
+                                 self.model.labels_Z_L: grd_mxstep_batch,
+                                 self.model.labels_ZS1: grd_labels_batch[:, 0, :],
+                                 self.model.labels_ZS2: grd_labels_batch[:, 1, :],
+                                 self.model.labels_ZS3: grd_labels_batch[:, 2, :],
+                                 self.model.labels_ZS4: grd_labels_batch[:, 3, :],
+                                 self.model.labels_ZS5: grd_labels_batch[:, 4, :],
+                                 self.model.labels_ZS6: grd_labels_batch[:, 5, :],
                                  self.model.is_train: True,
                                  self.model.drop_prob: 0.5}
-
+                    # Run Optim
                     _, l, _ = sess.run([train_op, loss, incr_glbl_stp], feed_dict)
                     curr_loss += l
 
@@ -165,31 +132,53 @@ class Train(object):
                         summary_writer.add_summary(summary, e*n_iters_per_epoch + i)
                 # Check validation
                 if e%self.check_val == 0:
-                    pred_cpthas = []
-                    pred_bboxes = []
-                    grnd_bboxes = []
-                    grnd_labels = []
+                    final_seq_acc_prd = 0.0
+                    # Run Loop
                     for t in range(valid_n_iters):
-                        image_val_batch, grd_val_lables_batch, grd_val_bboxes_batch = next(valid_loader)
+                        image_val_batch, grd_val_lables_batch, grd_val_mxstep_batch = next(valid_loader)
                         feed_dict = {self.model.images: image_val_batch,
                                      self.model.is_train: False,
                                      self.model.drop_prob: 1.0}
-                        prediction_bbox, prediction_cptha = sess.run([pred_bboxs_, pred_cptha_], feed_dict)
+                        Z_L_pred, Z_S1_pred, Z_S2_pred, Z_S3_pred, Z_S4_pred, Z_S5_pred, Z_S6_pred = sess.run([Z_L, Z_S1, Z_S2, Z_S3, Z_S4, Z_S5, Z_S6], feed_dict)
+                        # Prediction
+                        Z_S1_pred = np.argmax(Z_S1_pred[0])
+                        Z_S2_pred = np.argmax(Z_S2_pred[0])
+                        Z_S3_pred = np.argmax(Z_S3_pred[0])
+                        Z_S4_pred = np.argmax(Z_S4_pred[0])
+                        Z_S5_pred = np.argmax(Z_S5_pred[0])
+                        Z_S6_pred = np.argmax(Z_S6_pred[0])
+                        # Label
+                        Z_S1_grnd = np.argmax(grd_val_lables_batch[0, 0, :])
+                        Z_S2_grnd = np.argmax(grd_val_lables_batch[0, 1, :])
+                        Z_S3_grnd = np.argmax(grd_val_lables_batch[0, 2, :])
+                        Z_S4_grnd = np.argmax(grd_val_lables_batch[0, 3, :])
+                        Z_S5_grnd = np.argmax(grd_val_lables_batch[0, 4, :])
+                        Z_S6_grnd = np.argmax(grd_val_lables_batch[0, 5, :])
+                        # Match
+                        sample_acc_prd = 0.0
+                        if Z_S1_pred == Z_S1_grnd:
+                            sample_acc_prd += 1.0
+                        if Z_S2_pred == Z_S2_grnd:
+                            sample_acc_prd += 1.0
+                        if Z_S3_pred == Z_S3_grnd:
+                            sample_acc_prd += 1.0
+                        if Z_S4_pred == Z_S4_grnd:
+                            sample_acc_prd += 1.0
+                        if Z_S5_pred == Z_S5_grnd:
+                            sample_acc_prd += 1.0
+                        if Z_S6_pred == Z_S6_grnd:
+                            sample_acc_prd += 1.0
                         # Collect
-                        pred_bboxes.append(prediction_bbox)
-                        pred_cpthas.append(prediction_cptha)
-                        grnd_bboxes.append(grd_val_bboxes_batch)
-                        grnd_labels.append(grd_val_lables_batch)
+                        final_seq_acc_prd += sample_acc_prd/self.max_steps
                         # Print every
                         if t%4000 == 0:
                             print('Inference Completion..{%d/%d}' % (t, valid_n_iters))
                     #-----------------------------------------------------
                     print('Inference Completion..{%d/%d}' % (valid_n_iters, valid_n_iters))
                     print('Completed!')
-                    # IOU
-                    self.IOU(grnd_bboxes=grnd_bboxes, pred_bboxes=pred_bboxes)
                     # Prediction Accuracy
-                    self.pred_accuracy(grnd_labels=grnd_labels, pred_cpthas=pred_cpthas)
+                    print('Validation Sequence Classification Accuracy: ',\
+                              np.round((final_seq_acc_prd/n_iters), 4) * 100, '%')
                 #---------------------------------------------------------------
                 print("Previous epoch loss: ", prev_loss)
                 print("Current epoch loss: ", curr_loss)
@@ -212,8 +201,7 @@ def main():
                       dataset_name='val.txt', max_steps=6, image_width=200,\
                       image_height=64, grd_attn=False, mode='Valid')
     # Load Model
-    model = Model(dim_feature=[672, 128], dim_hidden=128, n_time_step=8,
-                  alpha_c=5.0, image_height=64, image_width=200, mode='train')
+    model = Model_Baseline(image_height=64, image_width=200, mode='train')
     # Load Trainer
     trainer = Train(model, data, val_data=val_data, n_epochs=1000, batch_size=64, val_batch_size=1,
                     update_rule='adam', learning_rate=0.0001, print_every=100, valid_freq=10,

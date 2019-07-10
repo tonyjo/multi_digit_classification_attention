@@ -44,8 +44,7 @@ class dataLoader(object):
             interm_data = []
             for u in range(self.max_steps):
                 frame = frames[i+u]
-                path, label, w1, h1, w2, h2 = frame.split(', ')
-                h2 = h2[:-1] # Remove /n at the end
+                path, label, _, _, _, _ = frame.split(', ')
                 if self.mode == 'Test':
                     path = int(path[0:-4]) + 55000
                     path = str(path) + '.png'
@@ -53,21 +52,13 @@ class dataLoader(object):
                     path = int(path[0:-4]) + 40000
                     path = str(path) + '.png'
                 label = all_selections.index(label) # Convert to label category
-                interm_data.append([path, label, int(w1), int(h1), int(w2), int(h2)])
+                interm_data.append([path, label])
+            # Collect
+            all_data.append(interm_data)
 
-            final_data = []
-            for k in range(self.max_steps):
-                if k == 0:
-                    final_data.append(interm_data[0][0])
-                    final_data.append(interm_data[k][1:])
-                else:
-                    final_data.append(interm_data[k][1:])
-            all_data.append(final_data)
-
-        self.all_data = all_data
+        self.all_data   = all_data
         self.max_length = len(self.all_data)
         self.possible_pred = len(all_selections)
-
         print('All data Loaded!')
 
     def gen_random_data(self):
@@ -95,15 +86,18 @@ class dataLoader(object):
         else:
             # Validation Data generation
             data_gen = self.gen_val_data()
-
+        # Create max steps
+        mxstep_label = np.zeros(self.max_steps)
+        mxstep_label[5] = 1.0
+        # Keep looping
         while True:
-            image_batch      = []
-            image_batch_norm = []
+            image_norm_batch = []
             grd_lables_batch = []
+            grd_mxstep_batch = []
             # Generate training batch
             for _ in range(batch_size):
                 sample_data     = next(data_gen)
-                sample_img_path = os.path.join(self.directory, self.dataset_dir, sample_data[0])
+                sample_img_path = os.path.join(self.directory, self.dataset_dir, sample_data[0][0])
                 image           = cv2.imread(sample_img_path)
                 image           = cv2.resize(image, (self.image_width, self.image_height))
                 # if self.mode != 'Train':
@@ -115,7 +109,7 @@ class dataLoader(object):
                 all_sample_labl = []
                 for idx in range((self.max_steps)):
                     # Extract and create ground labels
-                    sample_label  = int(sample_data[idx][0])
+                    sample_label  = int(sample_data[idx][1])
                     one_hot_label = np.zeros(self.possible_pred)
                     one_hot_label[sample_label] = 1.0
                     # Collect
@@ -123,5 +117,6 @@ class dataLoader(object):
                 # Append to generated batch
                 image_norm_batch.append(image_norm)
                 grd_lables_batch.append(all_sample_labl)
+                grd_mxstep_batch.append(mxstep_label)
 
-            yield np.array(image_norm_batch), np.array(grd_lables_batch)
+            yield np.array(image_norm_batch), np.array(grd_lables_batch), np.array(grd_mxstep_batch)

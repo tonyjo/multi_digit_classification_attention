@@ -13,7 +13,7 @@ class Model_Baseline(object):
         self.trunc_initializer  = tf.initializers.truncated_normal(0.01)
         # Placeholder
         self.images     = tf.placeholder(tf.float32, [None, image_height, image_width, 3])
-        self.labels_ZL  = tf.placeholder(tf.float32, [None, 6])
+        self.labels_Z_L = tf.placeholder(tf.float32, [None, 6])
         self.labels_ZS1 = tf.placeholder(tf.float32, [None, 62])
         self.labels_ZS2 = tf.placeholder(tf.float32, [None, 62])
         self.labels_ZS3 = tf.placeholder(tf.float32, [None, 62])
@@ -80,7 +80,7 @@ class Model_Baseline(object):
                     final_loss = final_loss + (self.l2 * tf.nn.l2_loss(var))
         print('...............................................................')
 
-        return final_loss/tf.to_float(batch_size)
+        return final_loss/tf.to_float(batch_size), Z_L, Z_S1, Z_S2, Z_S3, Z_S4, Z_S5, Z_S6
 
     def build_test_model(self):
         # Load baseline network
