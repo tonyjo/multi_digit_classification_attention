@@ -6,7 +6,7 @@ from nets import baseline_network
 class Model_Baseline(object):
     def __init__(self, image_height=64, image_width=64, l2=0.0002, mode='train'):
         self.l2   = l2
-        self.mode = mode
+        self.is_train  = tf.placeholder(tf.bool, name='mode')
         # Weight Initializer
         self.weight_initializer = tf.contrib.layers.xavier_initializer()
         self.const_initializer  = tf.constant_initializer(0.0)
@@ -38,7 +38,7 @@ class Model_Baseline(object):
 
     def build_model(self):
         # Load baseline network
-        logits = baseline_network(self.images, dropout=self.drop_prob, mode=self.mode)
+        logits = baseline_network(self.images, dropout=self.drop_prob, mode=self.is_train)
         print('Baseline build model sucess!')
         _, l_h = logits.get_shape().as_list()
         # Add prediction networks
@@ -84,7 +84,7 @@ class Model_Baseline(object):
 
     def build_test_model(self):
         # Load baseline network
-        logits = baseline_network(self.images, dropout=self.drop_prob, mode=self.mode)
+        logits = baseline_network(self.images, dropout=self.drop_prob, mode=self.is_train)
         print('Baseline build model sucess!')
         _, l_h = logits.get_shape().as_list()
         # Add prediction networks

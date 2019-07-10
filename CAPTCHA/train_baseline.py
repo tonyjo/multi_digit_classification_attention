@@ -13,7 +13,7 @@ class Train(object):
         self.model         = model
         self.data          = data
         self.val_data      = val_data
-        self.max_steps     = model.T
+        self.max_steps     = kwargs.pop('max_steps', 6)
         self.check_val     = kwargs.pop('check_val', 10)
         self.n_epochs      = kwargs.pop('n_epochs', 20)
         self.batch_size    = kwargs.pop('batch_size', 64)
@@ -178,7 +178,7 @@ class Train(object):
                     print('Completed!')
                     # Prediction Accuracy
                     print('Validation Sequence Classification Accuracy: ',\
-                              np.round((final_seq_acc_prd/n_iters), 4) * 100, '%')
+                              np.round((final_seq_acc_prd/valid_n_iters), 4) * 100, '%')
                 #---------------------------------------------------------------
                 print("Previous epoch loss: ", prev_loss)
                 print("Current epoch loss: ", curr_loss)
@@ -204,8 +204,8 @@ def main():
     model = Model_Baseline(image_height=64, image_width=200, mode='train')
     # Load Trainer
     trainer = Train(model, data, val_data=val_data, n_epochs=1000, batch_size=64, val_batch_size=1,
-                    update_rule='adam', learning_rate=0.0001, print_every=100, valid_freq=10,
-                    save_every=5, pretrained_model=None, model_path='model/lstm2/', log_path='log2/')
+                    update_rule='adam', max_steps=6, learning_rate=0.0001, print_every=100, valid_freq=10,
+                    save_every=5, pretrained_model=None, model_path='model/baseline/', log_path='base/')
     # Begin Training
     trainer.train()
 #-------------------------------------------------------------------------------
