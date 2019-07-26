@@ -187,7 +187,7 @@ class Model(object):
                     print(tf_var)
                     final_loss = final_loss + (self.l2 * tf.nn.l2_loss(var))
 
-        return final_loss/tf.to_float(batch_size), pred_bboxs, pred_cptha,
+        return final_loss/tf.to_float(batch_size), pred_bboxs, pred_cptha
 
     def build_test_model(self):
         features, layer_4 = net(self.images, mode=self.is_train)
