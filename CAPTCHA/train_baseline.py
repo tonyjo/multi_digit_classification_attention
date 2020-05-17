@@ -8,6 +8,9 @@ import tensorflow as tf
 from src.data_loader_baseline import dataLoader
 from src.model_baseline import Model_Baseline
 
+# Implementation of Multi-digit Number Recognition from Street View Imagery using Deep Convolutional Neural Networks
+# https://arxiv.org/abs/1312.6082
+
 class Train(object):
     def __init__(self, model, data, val_data, **kwargs):
         self.model         = model
