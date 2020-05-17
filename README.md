@@ -128,3 +128,8 @@ and open and run:
 ``` bash
 > evaluate_and_viz_end2end.ipynb
 ```
+
+
+## Contribution guidelines
+
+Any improvements would be appreciated, send a merge request if you would like to contribute.
