@@ -1,0 +1,6 @@
+numpy
+scipy
+Pillow
+matplotlib
+tensorflow-gpu==1.4.0
+jupyter
