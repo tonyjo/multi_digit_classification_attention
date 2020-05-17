@@ -1,5 +1,7 @@
 # Multi-character Prediction Using Attention
-![alt text](./images/title.png "title-image")
+<p align="center">
+  <img src="./images/title.png" width="700">
+</p>
 
 ## Setup
 ``` bash
