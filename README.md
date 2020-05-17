@@ -1,6 +1,7 @@
-# Multi-digit detection  via attention and classification
+# Multi-digit & CAPTCHA detection via attention and classification
 ![alt text](./images/title.png "title-image")
 
+## Multi-Digit classification - (SVHN dataset)
 ### Preparing data
 We need to prepare the raw SVHN dataset
 
@@ -41,7 +42,4 @@ jupyter notebook
 and open and run:
 > evaluate_and_viz.ipynb
 
-### Next steps
-1. Build a stronger classification network, maybe by training changes i.e. advanced data augmentations or using the extra dataset
-2. Verify and finish up ```test_pred_seq.py```
-3. Change up hyper-paramters to get better results.
+## CAPTCHA classification - (CAPTCHA dataset)
