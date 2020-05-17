@@ -1,6 +1,6 @@
 # Multi-character Prediction Using Attention
 <p align="center">
-  <img src="./images/title.png" width="700">
+  <img src="./images/title.png" width="800">
 </p>
 
 ## Setup
